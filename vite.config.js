@@ -1,15 +1,17 @@
-// vite.config.js
-import { defineConfig } from 'vite'
 
-export default defineConfig({
-  server: {
-    port: 5173,
-  },
+export default {
+
+  // Optional: Silence Sass deprecation warnings. See note below.
   css: {
-    preprocessorOptions: {
-      scss: {
-        additionalData: `@import "bootstrap/scss/bootstrap";`
-      }
-    }
-  }
-})
+     preprocessorOptions: {
+        scss: {
+          silenceDeprecations: [
+            'import',
+           // 'mixed-decls',
+            'color-functions',
+            'global-builtin',
+          ],
+        },
+     },
+  },
+}
