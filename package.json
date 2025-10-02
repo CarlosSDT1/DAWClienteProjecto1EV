@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173",
+    "prebuild": "rm -rf node_modules && npm install",
     "build": "vite build",
     "preview": "vite preview"
   },
