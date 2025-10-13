@@ -1,7 +1,9 @@
 import "./scss/style.scss"
+import { PongGame } from './game/PongGame.js'
 
-
-import * as bootstrap from 'bootstrap'
-import { renderHeader } from "./components/header"
-import { renderContent } from "./components/content";
-import { renderFooter } from "./components/footer";
+// Iniciar el juego cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    const gameContainer = document.getElementById('app');
+    const game = new PongGame(gameContainer);
+    game.start();
+});
