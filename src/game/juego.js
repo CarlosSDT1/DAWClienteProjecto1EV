@@ -14,6 +14,7 @@ export function iniciarJuego() {
                 </div>
                 <div id="dado-resultado" class="h5 text-warning mb-2"></div>
                 <div id="mensaje-especial" class="h6 text-info"></div>
+                <div id="info-carrera" class="small text-muted mt-2"></div>
             </div>
 
             <div class="row justify-content-center">
@@ -34,6 +35,7 @@ export function iniciarJuego() {
                         <h5>Jugador 1</h5>
                         <div>Posición: <span id="pos-jugador1">0</span></div>
                         <div>Dados: <span id="dados-jugador1">1</span></div>
+                        <div class="estado-jugador" id="estado-jugador1"></div>
                         <div class="ficha ficha-jugador1 mt-2"></div>
                     </div>
                 </div>
@@ -42,6 +44,7 @@ export function iniciarJuego() {
                         <h5>Jugador 2</h5>
                         <div>Posición: <span id="pos-jugador2">0</span></div>
                         <div>Dados: <span id="dados-jugador2">1</span></div>
+                        <div class="estado-jugador" id="estado-jugador2"></div>
                         <div class="ficha ficha-jugador2 mt-2"></div>
                     </div>
                 </div>
@@ -50,6 +53,7 @@ export function iniciarJuego() {
                         <h5>Jugador 3</h5>
                         <div>Posición: <span id="pos-jugador3">0</span></div>
                         <div>Dados: <span id="dados-jugador3">1</span></div>
+                        <div class="estado-jugador" id="estado-jugador3"></div>
                         <div class="ficha ficha-jugador3 mt-2"></div>
                     </div>
                 </div>
@@ -58,8 +62,28 @@ export function iniciarJuego() {
                         <h5>Jugador 4</h5>
                         <div>Posición: <span id="pos-jugador4">0</span></div>
                         <div>Dados: <span id="dados-jugador4">1</span></div>
+                        <div class="estado-jugador" id="estado-jugador4"></div>
                         <div class="ficha ficha-jugador4 mt-2"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Tabla de posiciones finales -->
+            <div id="tabla-posiciones" class="mt-4" style="display: none;">
+                <h3 class="text-center mb-3">🏆 Resultados Finales</h3>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Posición</th>
+                                <th>Jugador</th>
+                                <th>Turnos</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpo-tabla-posiciones">
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -74,34 +98,48 @@ export function iniciarJuego() {
                 nombre: "Jugador 1", 
                 color: "primary",
                 dadosAcumulados: 1,
-                pasoUltimoTurno: false
+                pasoUltimoTurno: false,
+                terminado: false,
+                posicionFinal: 0,
+                turnos: 0
             },
             2: { 
                 posicion: 0, 
                 nombre: "Jugador 2", 
                 color: "danger",
                 dadosAcumulados: 1,
-                pasoUltimoTurno: false
+                pasoUltimoTurno: false,
+                terminado: false,
+                posicionFinal: 0,
+                turnos: 0
             },
             3: { 
                 posicion: 0, 
                 nombre: "Jugador 3", 
                 color: "success",
                 dadosAcumulados: 1,
-                pasoUltimoTurno: false
+                pasoUltimoTurno: false,
+                terminado: false,
+                posicionFinal: 0,
+                turnos: 0
             },
             4: { 
                 posicion: 0, 
                 nombre: "Jugador 4", 
                 color: "warning",
                 dadosAcumulados: 1,
-                pasoUltimoTurno: false
+                pasoUltimoTurno: false,
+                terminado: false,
+                posicionFinal: 0,
+                turnos: 0
             }
         },
         dadoTirado: false,
         valorDado: 0,
         juegoActivo: true,
         jugadoresInactivos: new Set(),
+        jugadoresTerminados: 0,
+        turnoActual: 1,
         tablero: crearTableroOca()
     };
 
@@ -111,11 +149,14 @@ export function iniciarJuego() {
     const infoDadosTurnoElement = document.getElementById('info-dados-turno');
     const dadoResultadoElement = document.getElementById('dado-resultado');
     const mensajeEspecialElement = document.getElementById('mensaje-especial');
+    const infoCarreraElement = document.getElementById('info-carrera');
     const tirarDadoBtn = document.getElementById('tirar-dado');
     const pasarTurnoBtn = document.getElementById('pasar-turno');
     const reiniciarBtn = document.getElementById('reiniciar');
+    const tablaPosicionesElement = document.getElementById('tabla-posiciones');
+    const cuerpoTablaElement = document.getElementById('cuerpo-tabla-posiciones');
 
-    // Crear tablero de la Oca (63 casillas)
+    // Crear tablero de la Oca (63 casillas) - misma función que antes
     function crearTableroOca() {
         const tablero = [];
         
@@ -160,47 +201,94 @@ export function iniciarJuego() {
     }
 
     function dibujarTablero() {
-        tableroElement.innerHTML = '';
-        tableroElement.className = 'oca-board mx-auto';
-        
-        for (let i = 0; i <= 63; i++) {
-            const casilla = document.createElement('div');
-            casilla.className = `casilla casilla-${i} ${estado.tablero[i].especial ? 'casilla-especial ' + estado.tablero[i].especial.tipo : ''}`;
-            casilla.dataset.numero = i;
+    tableroElement.innerHTML = '';
+    tableroElement.className = 'oca-board mx-auto';
+    
+    // Crear tablero en forma de serpiente (8x8)
+    for (let fila = 0; fila < 8; fila++) {
+        for (let columna = 0; columna < 8; columna++) {
+            let numeroCasilla;
             
-            const numero = document.createElement('div');
-            numero.className = 'numero-casilla';
-            numero.textContent = i;
-            casilla.appendChild(numero);
-            
-            const fichasContainer = document.createElement('div');
-            fichasContainer.className = 'fichas-container';
-            
-            Object.keys(estado.jugadores).forEach(jugadorId => {
-                if (estado.jugadores[jugadorId].posicion === i) {
-                    const ficha = document.createElement('div');
-                    ficha.className = `ficha ficha-jugador${jugadorId}`;
-                    ficha.title = estado.jugadores[jugadorId].nombre;
-                    fichasContainer.appendChild(ficha);
-                }
-            });
-            
-            casilla.appendChild(fichasContainer);
-            
-            if (estado.tablero[i].especial) {
-                const icono = document.createElement('div');
-                icono.className = 'icono-especial';
-                icono.innerHTML = obtenerIconoEspecial(estado.tablero[i].especial.tipo);
-                casilla.appendChild(icono);
+            // Calcular número de casilla en forma de serpiente
+            if (fila % 2 === 0) {
+                // Filas pares: izquierda a derecha (0, 1, 2, 3...)
+                numeroCasilla = fila * 8 + columna;
+            } else {
+                // Filas impares: derecha a izquierda (15, 14, 13, 12...)
+                numeroCasilla = (fila + 1) * 8 - 1 - columna;
             }
             
-            tableroElement.appendChild(casilla);
+            // Solo crear casillas del 1 al 63 (la 0 es la salida)
+            if (numeroCasilla > 0 && numeroCasilla <= 63) {
+                const casilla = document.createElement('div');
+                casilla.className = `casilla casilla-${numeroCasilla} ${estado.tablero[numeroCasilla].especial ? 'casilla-especial ' + estado.tablero[numeroCasilla].especial.tipo : ''}`;
+                casilla.dataset.numero = numeroCasilla;
+                casilla.style.gridRow = fila + 1;
+                casilla.style.gridColumn = columna + 1;
+                
+                const numero = document.createElement('div');
+                numero.className = 'numero-casilla';
+                numero.textContent = numeroCasilla;
+                casilla.appendChild(numero);
+                
+                const fichasContainer = document.createElement('div');
+                fichasContainer.className = 'fichas-container';
+                
+                Object.keys(estado.jugadores).forEach(jugadorId => {
+                    if (estado.jugadores[jugadorId].posicion === numeroCasilla) {
+                        const ficha = document.createElement('div');
+                        ficha.className = `ficha ficha-jugador${jugadorId} ${estado.jugadores[jugadorId].terminado ? 'terminado' : ''}`;
+                        ficha.title = estado.jugadores[jugadorId].nombre + (estado.jugadores[jugadorId].terminado ? ' (Terminado)' : '');
+                        fichasContainer.appendChild(ficha);
+                    }
+                });
+                
+                casilla.appendChild(fichasContainer);
+                
+                if (estado.tablero[numeroCasilla].especial) {
+                    const icono = document.createElement('div');
+                    icono.className = 'icono-especial';
+                    icono.innerHTML = obtenerIconoEspecial(estado.tablero[numeroCasilla].especial.tipo);
+                    casilla.appendChild(icono);
+                }
+                
+                tableroElement.appendChild(casilla);
+            } else if (numeroCasilla === 0) {
+                // Casilla de salida (posición 0)
+                const casilla = document.createElement('div');
+                casilla.className = 'casilla casilla-salida';
+                casilla.dataset.numero = 0;
+                casilla.style.gridRow = fila + 1;
+                casilla.style.gridColumn = columna + 1;
+                
+                const numero = document.createElement('div');
+                numero.className = 'numero-casilla';
+                numero.textContent = 'Salida';
+                casilla.appendChild(numero);
+                
+                const fichasContainer = document.createElement('div');
+                fichasContainer.className = 'fichas-container';
+                
+                Object.keys(estado.jugadores).forEach(jugadorId => {
+                    if (estado.jugadores[jugadorId].posicion === 0) {
+                        const ficha = document.createElement('div');
+                        ficha.className = `ficha ficha-jugador${jugadorId}`;
+                        ficha.title = estado.jugadores[jugadorId].nombre;
+                        fichasContainer.appendChild(ficha);
+                    }
+                });
+                
+                casilla.appendChild(fichasContainer);
+                tableroElement.appendChild(casilla);
+            }
         }
-        
-        actualizarPosiciones();
-        actualizarEstadosJugadores();
-        actualizarInfoTurno();
     }
+    
+    actualizarPosiciones();
+    actualizarEstadosJugadores();
+    actualizarInfoTurno();
+    actualizarInfoCarrera();
+}
 
     function obtenerIconoEspecial(tipo) {
         const iconos = {
@@ -219,9 +307,18 @@ export function iniciarJuego() {
     function actualizarInfoTurno() {
         const jugador = estado.jugadores[estado.jugadorActual];
         
+        if (jugador.terminado) {
+            // Si el jugador actual ya terminó, buscar siguiente
+            siguienteTurno();
+            return;
+        }
+        
         // Actualizar el nombre del jugador actual
         jugadorActualElement.textContent = jugador.nombre;
-        jugadorActualElement.className = `text-${jugador.color}`;
+        
+        // Actualizar el color del badge según el jugador
+        const badge = infoTurnoElement.querySelector('.badge');
+        badge.className = `badge bg-${jugador.color} fs-5 p-3`;
         
         // Actualizar información de dados acumulados
         if (jugador.dadosAcumulados > 1) {
@@ -238,11 +335,30 @@ export function iniciarJuego() {
         mensajeEspecialElement.className = 'h6 text-success';
     }
 
+    function actualizarInfoCarrera() {
+        const terminados = estado.jugadoresTerminados;
+        const totalJugadores = Object.keys(estado.jugadores).length;
+        
+        if (terminados > 0) {
+            infoCarreraElement.textContent = `🏁 ${terminados}/${totalJugadores} jugadores han terminado`;
+            infoCarreraElement.className = 'small text-success fw-bold';
+        } else {
+            infoCarreraElement.textContent = '';
+            infoCarreraElement.className = 'small text-muted';
+        }
+    }
+
     function tirarDado() {
         if (!estado.juegoActivo || estado.dadoTirado) return;
 
         const jugador = estado.jugadores[estado.jugadorActual];
+        if (jugador.terminado) return;
+
         const numDados = jugador.dadosAcumulados;
+        
+        // Incrementar contador de turnos
+        jugador.turnos++;
+        estado.turnoActual++;
         
         // Tirar los dados acumulados
         let totalDado = 0;
@@ -279,6 +395,11 @@ export function iniciarJuego() {
         if (!estado.juegoActivo || estado.dadoTirado) return;
 
         const jugador = estado.jugadores[estado.jugadorActual];
+        if (jugador.terminado) return;
+
+        // Incrementar contador de turnos
+        jugador.turnos++;
+        estado.turnoActual++;
         
         // Acumular un dado extra para el próximo turno (máximo 3 dados)
         if (jugador.dadosAcumulados < 3) {
@@ -313,20 +434,26 @@ export function iniciarJuego() {
             jugador.posicion = nuevaPosicion;
         }
         
-        // Verificar casilla especial
-        verificarCasillaEspecial(jugador);
+        // Verificar si llegó a la meta
+        if (jugador.posicion === 63 && !jugador.terminado) {
+            jugador.terminado = true;
+            jugador.posicionFinal = estado.jugadoresTerminados + 1;
+            estado.jugadoresTerminados++;
+            mensajeEspecialElement.textContent = `🎉 ¡${jugador.nombre} ha llegado a la meta en ${jugador.posicionFinal}° lugar!`;
+            mensajeEspecialElement.className = 'h6 text-success fw-bold';
+            
+            // Verificar si todos han terminado
+            if (estado.jugadoresTerminados === Object.keys(estado.jugadores).length) {
+                finalizarJuego();
+                return;
+            }
+        } else {
+            // Verificar casilla especial solo si no ha terminado
+            verificarCasillaEspecial(jugador);
+        }
         
         estado.dadoTirado = false;
         dibujarTablero();
-        
-        // Verificar victoria
-        if (jugador.posicion === 63) {
-            estado.juegoActivo = false;
-            infoTurnoElement.innerHTML = `<div class="alert alert-success h3">🎉 ¡${jugador.nombre} ha ganado el juego! 🎉</div>`;
-            tirarDadoBtn.disabled = true;
-            pasarTurnoBtn.disabled = true;
-            return;
-        }
         
         // Cambiar turno (a menos que haya efecto especial que lo impida)
         if (!estado.mantenerTurno) {
@@ -347,11 +474,13 @@ export function iniciarJuego() {
             siguienteJugador = siguienteJugador % 4 + 1;
             intentos++;
             
+            // Si todos los jugadores están terminados o inactivos, reactivar
             if (intentos > 4) {
                 estado.jugadoresInactivos.clear();
                 break;
             }
-        } while (estado.jugadoresInactivos.has(siguienteJugador));
+        } while (estado.jugadoresInactivos.has(siguienteJugador) || 
+                 estado.jugadores[siguienteJugador].terminado);
         
         estado.jugadorActual = siguienteJugador;
         actualizarInfoTurno();
@@ -396,13 +525,6 @@ export function iniciarJuego() {
             case "calavera":
                 jugador.posicion = especial.movimiento;
                 break;
-                
-            case "meta":
-                estado.juegoActivo = false;
-                infoTurnoElement.innerHTML = `<div class="alert alert-success h3">🎉 ¡${jugador.nombre} ha ganado el juego! 🎉</div>`;
-                tirarDadoBtn.disabled = true;
-                pasarTurnoBtn.disabled = true;
-                break;
         }
         
         if ((especial.tipo === "oca" || especial.tipo === "puente") && estado.jugadoresInactivos.size > 0) {
@@ -429,29 +551,76 @@ export function iniciarJuego() {
         return 63;
     }
 
+    function finalizarJuego() {
+        estado.juegoActivo = false;
+        
+        // Mostrar tabla de posiciones
+        mostrarTablaPosiciones();
+        
+        // Deshabilitar botones
+        tirarDadoBtn.disabled = true;
+        pasarTurnoBtn.disabled = true;
+        
+        infoTurnoElement.innerHTML = `<div class="alert alert-success h3">🎉 ¡Carrera Terminada! 🎉</div>`;
+    }
+
+    function mostrarTablaPosiciones() {
+        // Ordenar jugadores por posición final
+        const jugadoresOrdenados = Object.values(estado.jugadores)
+            .sort((a, b) => a.posicionFinal - b.posicionFinal);
+        
+        cuerpoTablaElement.innerHTML = '';
+        
+        jugadoresOrdenados.forEach((jugador, index) => {
+            const fila = document.createElement('tr');
+            let posicionTexto = '';
+            let claseFila = '';
+            
+            switch (index) {
+                case 0:
+                    posicionTexto = '🥇 1°';
+                    claseFila = 'table-success';
+                    break;
+                case 1:
+                    posicionTexto = '🥈 2°';
+                    claseFila = 'table-info';
+                    break;
+                case 2:
+                    posicionTexto = '🥉 3°';
+                    claseFila = 'table-warning';
+                    break;
+                default:
+                    posicionTexto = `${index + 1}°`;
+                    claseFila = '';
+            }
+            
+            fila.className = claseFila;
+            fila.innerHTML = `
+                <td class="fw-bold">${posicionTexto}</td>
+                <td><span class="badge bg-${jugador.color}">${jugador.nombre}</span></td>
+                <td>${jugador.turnos}</td>
+                <td>${jugador.terminado ? '<span class="text-success">✅ Terminado</span>' : '<span class="text-danger">❌ No terminó</span>'}</td>
+            `;
+            
+            cuerpoTablaElement.appendChild(fila);
+        });
+        
+        tablaPosicionesElement.style.display = 'block';
+    }
+
     function actualizarPosiciones() {
         Object.keys(estado.jugadores).forEach(jugadorId => {
             document.getElementById(`pos-jugador${jugadorId}`).textContent = estado.jugadores[jugadorId].posicion;
             document.getElementById(`dados-jugador${jugadorId}`).textContent = estado.jugadores[jugadorId].dadosAcumulados;
-        });
-        
-        document.querySelectorAll('.player-info').forEach(info => {
-            info.classList.remove('active', 'inactive', 'acumulando');
-        });
-        
-        const jugadorActivoElement = document.querySelector(`.player-info:has(.ficha-jugador${estado.jugadorActual})`);
-        if (jugadorActivoElement) {
-            jugadorActivoElement.classList.add('active');
             
-            if (estado.jugadores[estado.jugadorActual].dadosAcumulados > 1) {
-                jugadorActivoElement.classList.add('acumulando');
-            }
-        }
-        
-        estado.jugadoresInactivos.forEach(jugadorId => {
-            const jugadorInactivoElement = document.querySelector(`.player-info:has(.ficha-jugador${jugadorId})`);
-            if (jugadorInactivoElement) {
-                jugadorInactivoElement.classList.add('inactive');
+            // Actualizar estado del jugador
+            const estadoElement = document.getElementById(`estado-jugador${jugadorId}`);
+            if (estado.jugadores[jugadorId].terminado) {
+                estadoElement.innerHTML = `<span class="badge bg-success">🥇 ${estado.jugadores[jugadorId].posicionFinal}° Lugar</span>`;
+            } else if (estado.jugadoresInactivos.has(parseInt(jugadorId))) {
+                estadoElement.innerHTML = '<span class="badge bg-secondary">⏸️ Inactivo</span>';
+            } else {
+                estadoElement.innerHTML = '<span class="badge bg-light text-dark">🎯 Jugando</span>';
             }
         });
     }
@@ -469,19 +638,26 @@ export function iniciarJuego() {
 
     function reiniciarJuego() {
         estado.jugadorActual = 1;
-        Object.keys(estado.jugadores).forEach(jugadorId => {
-            estado.jugadores[jugadorId].posicion = 0;
-            estado.jugadores[jugadorId].dadosAcumulados = 1;
-            estado.jugadores[jugadorId].pasoUltimoTurno = false;
-        });
+        estado.jugadoresTerminados = 0;
+        estado.turnoActual = 1;
         estado.dadoTirado = false;
         estado.valorDado = 0;
         estado.juegoActivo = true;
         estado.mantenerTurno = false;
         estado.jugadoresInactivos.clear();
 
+        Object.keys(estado.jugadores).forEach(jugadorId => {
+            estado.jugadores[jugadorId].posicion = 0;
+            estado.jugadores[jugadorId].dadosAcumulados = 1;
+            estado.jugadores[jugadorId].pasoUltimoTurno = false;
+            estado.jugadores[jugadorId].terminado = false;
+            estado.jugadores[jugadorId].posicionFinal = 0;
+            estado.jugadores[jugadorId].turnos = 0;
+        });
+
         tirarDadoBtn.disabled = false;
         pasarTurnoBtn.disabled = false;
+        tablaPosicionesElement.style.display = 'none';
         
         dibujarTablero();
     }

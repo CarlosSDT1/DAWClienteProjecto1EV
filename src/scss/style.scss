@@ -2,511 +2,280 @@
 @import 'bootstrap/scss/bootstrap';
 
 // Variables
-$celda-size: 100px;
-$celda-size-mobile: 80px;
+$color-fondo: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+$color-container: rgba(255, 255, 255, 0.95);
+$color-tablero: linear-gradient(135deg, #8BC34A, #4CAF50);
+$borde-tablero: #5D4037;
 
-// Estilos generales
+// Estilos generales simplificados
 body {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: $color-fondo;
     min-height: 100vh;
     padding: 20px 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Arial', sans-serif;
 }
 
 .container {
-    background-color: rgba(255, 255, 255, 0.95);
-    border-radius: 15px;
-    padding: 2rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    background: $color-container;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
-    color: #343a40;
-    font-weight: 700;
+    color: #2c3e50;
     text-align: center;
-    margin-bottom: 2rem;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
 }
 
-// Estilos específicos para el Juego de la Oca
+// Tablero simplificado
 .oca-board {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
     gap: 2px;
-    width: 600px;
-    height: 600px;
-    background: linear-gradient(135deg, #8BC34A, #4CAF50);
-    border: 3px solid #5D4037;
-    border-radius: 10px;
-    padding: 10px;
+    width: 500px;
+    height: 500px;
+    background: $color-tablero;
+    border: 2px solid $borde-tablero;
+    border-radius: 8px;
+    padding: 8px;
+    margin: 0 auto;
     
     .casilla {
-        background-color: rgba(255, 255, 255, 0.9);
-        border: 1px solid #ccc;
-        border-radius: 5px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         position: relative;
-        font-size: 0.8rem;
-        min-height: 60px;
-        transition: all 0.3s ease;
+        font-size: 0.7rem;
         
         &:hover {
-            transform: scale(1.02);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            background: #f8f9fa;
         }
         
-        &.casilla-especial {
-            border-width: 2px;
+        &.casilla-salida {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        
+        // Casillas especiales básicas
+        &.oca { background: #ffeaa7; border-color: #fdcb6e; }
+        &.puente { background: #d6eaf8; border-color: #3498db; }
+        &.posada { background: #f5e6ca; border-color: #d35400; }
+        &.pozo { background: #ecf0f1; border-color: #7f8c8d; }
+        &.laberinto { background: #e8daef; border-color: #9b59b6; }
+        &.carcel { background: #fadbd8; border-color: #e74c3c; }
+        &.calavera { background: #34495e; color: white; border-color: #2c3e50; }
+        &.meta { 
+            background: #d5f4e6; 
+            border-color: #27ae60; 
             font-weight: bold;
         }
         
-        &.oca { 
-            border-color: #FF9800; 
-            background-color: #FFF3E0; 
-        }
-        &.puente { 
-            border-color: #2196F3; 
-            background-color: #E3F2FD; 
-        }
-        &.posada { 
-            border-color: #795548; 
-            background-color: #EFEBE9; 
-        }
-        &.pozo { 
-            border-color: #607D8B; 
-            background-color: #CFD8DC; 
-        }
-        &.laberinto { 
-            border-color: #9C27B0; 
-            background-color: #F3E5F5; 
-        }
-        &.carcel { 
-            border-color: #F44336; 
-            background-color: #FFEBEE; 
-        }
-        &.calavera { 
-            border-color: #000; 
-            background-color: #424242; 
-            color: white; 
-        }
-        &.meta { 
-            border-color: #4CAF50; 
-            background-color: #C8E6C9; 
-            animation: pulse-meta 2s ease-in-out infinite;
-        }
-        
         .numero-casilla {
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             font-weight: bold;
             color: #666;
             position: absolute;
             top: 2px;
             left: 2px;
             background: rgba(255, 255, 255, 0.8);
-            border-radius: 3px;
             padding: 1px 3px;
+            border-radius: 2px;
         }
         
         .fichas-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 2px;
-            margin-top: 5px;
-            min-height: 20px;
+            gap: 1px;
+            margin-top: 3px;
         }
         
         .icono-especial {
-            font-size: 1.2rem;
-            margin-top: 5px;
-            filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.3));
+            font-size: 1rem;
+            margin-top: 2px;
         }
     }
 }
 
-@keyframes pulse-meta {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-// Fichas de jugadores
+// Fichas básicas
 .ficha {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    border: 2px solid #000;
-    transition: all 0.3s ease;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+    border: 1px solid #000;
     
-    &:hover {
-        transform: scale(1.2);
-    }
+    &.ficha-jugador1 { background: #3498db; }
+    &.ficha-jugador2 { background: #e74c3c; }
+    &.ficha-jugador3 { background: #2ecc71; }
+    &.ficha-jugador4 { background: #f39c12; }
     
-    &.ficha-jugador1 {
-        background: linear-gradient(135deg, #007bff, #0056b3);
-        border-color: #003d7a;
-    }
-    
-    &.ficha-jugador2 {
-        background: linear-gradient(135deg, #dc3545, #a71e2a);
-        border-color: #7a1c24;
-    }
-    
-    &.ficha-jugador3 {
-        background: linear-gradient(135deg, #28a745, #1e7e34);
-        border-color: #145523;
-    }
-    
-    &.ficha-jugador4 {
-        background: linear-gradient(135deg, #ffc107, #d39e00);
-        border-color: #8b6c00;
+    &.terminado {
+        border: 2px solid gold;
+        animation: brillo 1s ease-in-out infinite;
     }
 }
 
-// Paneles de información de jugadores
+@keyframes brillo {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+// Paneles de jugadores simplificados
 .player-info {
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    position: relative;
-    overflow: hidden;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 1rem;
+    margin-bottom: 1rem;
     
     &.active {
-        box-shadow: 0 0 15px gold;
-        transform: scale(1.05);
-        border-color: gold;
-        
-        &::after {
-            content: '⬤ TURNO ACTUAL';
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: gold;
-            color: #000;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 0.7rem;
-            font-weight: bold;
-        }
+        border-color: #007bff;
+        background: #f8f9fa;
     }
     
     &.acumulando {
-        box-shadow: 0 0 15px #0dcaf0;
-        border-color: #0dcaf0;
-        
-        &::after {
-            content: '🎲 DADOS ACUM.';
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #0dcaf0;
-            color: #000;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 0.7rem;
-            font-weight: bold;
-        }
+        border-color: #17a2b8;
+        background: #f8f9fa;
     }
     
     &.inactive {
         opacity: 0.6;
-        background-color: #6c757d !important;
-        
-        &::after {
-            content: '⏸️ INACTIVO';
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #6c757d;
-            color: white;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 0.7rem;
-            font-weight: bold;
-        }
+        background: #e9ecef;
     }
     
-    div:nth-child(3) { // Posición
-        font-size: 0.9rem;
-        font-weight: bold;
+    h5 {
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
     }
     
-    div:nth-child(4) { // Dados
-        font-size: 0.9rem;
-        font-weight: bold;
-        color: #ffeb3b;
+    div {
+        font-size: 0.8rem;
+        margin-bottom: 0.2rem;
     }
 }
 
-// Botones personalizados
-.btn-success {
-    background: linear-gradient(135deg, #198754, #146c43);
-    border: none;
-    font-weight: bold;
-    transition: all 0.3s ease;
+// Botones básicos
+.btn {
+    font-weight: 500;
+    margin: 0.2rem;
     
     &:hover {
-        background: linear-gradient(135deg, #146c43, #0f5132);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(25, 135, 84, 0.4);
-    }
-    
-    &:active {
-        transform: translateY(0);
-    }
-}
-
-.btn-info {
-    background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
-    border: none;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    
-    &:hover {
-        background: linear-gradient(135deg, #0aa2c0, #088197);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(13, 202, 240, 0.4);
-    }
-    
-    &:active {
-        transform: translateY(0);
-    }
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    border: none;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    
-    &:hover {
-        background: linear-gradient(135deg, #5a6fd8, #6a4190);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-    
-    &:active {
-        transform: translateY(0);
+        transform: translateY(-1px);
     }
 }
 
 // Estados del juego
-#estado {
-    font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+#info-turno {
+    .badge {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+    }
 }
 
 #dado-resultado {
-    font-weight: bold;
-    min-height: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    &.dados-multiples {
-        animation: pulse-dados 0.5s ease-in-out;
-    }
+    font-weight: 600;
+    min-height: 1.5rem;
+    margin: 0.5rem 0;
 }
 
 #mensaje-especial {
-    min-height: 1.5rem;
-    font-weight: bold;
-    padding: 0.5rem;
-    border-radius: 5px;
-    background: rgba(255, 255, 255, 0.1);
-    
-    &.mensaje-importante {
-        background: rgba(255, 193, 7, 0.2);
-        border-left: 4px solid #ffc107;
-        padding-left: 1rem;
-    }
-}
-
-#info-dados {
-    font-weight: bold;
     min-height: 1.2rem;
+    font-weight: 500;
+    margin: 0.5rem 0;
+    padding: 0.3rem;
+    border-radius: 3px;
+    background: #f8f9fa;
+}
+
+#info-carrera {
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+}
+
+// Tabla de posiciones básica
+#tabla-posiciones {
+    background: white;
+    border-radius: 5px;
+    padding: 1rem;
+    margin-top: 1rem;
     
-    &.text-success {
-        background: rgba(40, 167, 69, 0.1);
-        padding: 0.25rem 0.5rem;
-        border-radius: 3px;
-        border-left: 3px solid #28a745;
+    .table {
+        font-size: 0.9rem;
+        margin-bottom: 0;
     }
 }
 
-// Animaciones
-@keyframes pulse-dados {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+.estado-jugador {
+    font-size: 0.7rem;
+    margin-top: 0.3rem;
 }
 
-// Responsive
+// Responsive básico
 @media (max-width: 768px) {
     .oca-board {
-        width: 100%;
-        height: 70vw;
+        width: 90vw;
+        height: 90vw;
         max-width: 400px;
         max-height: 400px;
-        
-        .casilla {
-            min-height: 40px;
-            font-size: 0.6rem;
-            
-            .ficha {
-                width: 12px;
-                height: 12px;
-            }
-            
-            .icono-especial {
-                font-size: 1rem;
-            }
-            
-            .numero-casilla {
-                font-size: 0.6rem;
-                padding: 0 2px;
-            }
-        }
+    }
+    
+    .container {
+        padding: 1rem;
     }
     
     .player-info {
-        margin-bottom: 15px;
-        padding: 1rem !important;
-        
-        h5 {
-            font-size: 1rem;
-        }
-        
-        div {
-            font-size: 0.8rem;
-        }
-        
-        .ficha {
-            width: 20px;
-            height: 20px;
-        }
+        padding: 0.7rem;
+        margin-bottom: 0.7rem;
     }
     
-    .btn-lg {
-        padding: 0.5rem 1rem;
+    .btn {
         font-size: 0.9rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    #estado {
-        font-size: 1.1rem;
+        padding: 0.5rem 1rem;
     }
 }
 
 @media (max-width: 576px) {
-    .container {
-        padding: 1rem;
-        margin: 0.5rem;
-    }
-    
     h1 {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
+        font-size: 1.3rem;
     }
     
     .oca-board {
-        gap: 1px;
-        padding: 5px;
+        width: 95vw;
+        height: 95vw;
         
         .casilla {
-            min-height: 35px;
+            font-size: 0.6rem;
             
-            .fichas-container {
-                margin-top: 2px;
+            .ficha {
+                width: 10px;
+                height: 10px;
+            }
+            
+            .icono-especial {
+                font-size: 0.8rem;
             }
         }
     }
     
     .player-info {
-        &::after {
-            font-size: 0.6rem !important;
-            padding: 1px 3px !important;
+        h5 {
+            font-size: 0.9rem;
         }
-    }
-}
-
-// Estados de botones deshabilitados
-.btn:disabled {
-    opacity: 0.6;
-    transform: none !important;
-    box-shadow: none !important;
-    cursor: not-allowed;
-}
-
-// Mejoras de accesibilidad
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
-// Focus visible para accesibilidad
-.btn:focus-visible {
-    outline: 2px solid #0d6efd;
-    outline-offset: 2px;
-}
-// Nuevos estilos para el mensaje de turno
-#info-turno {
-    .badge {
-        font-size: 1.1rem !important;
-        padding: 0.75rem 1.5rem !important;
-        border: 2px solid rgba(255, 255, 255, 0.3);
         
-        &.bg-primary {
-            background: linear-gradient(135deg, #007bff, #0056b3) !important;
-        }
-        &.bg-danger {
-            background: linear-gradient(135deg, #dc3545, #a71e2a) !important;
-        }
-        &.bg-success {
-            background: linear-gradient(135deg, #28a745, #1e7e34) !important;
-        }
-        &.bg-warning {
-            background: linear-gradient(135deg, #ffc107, #d39e00) !important;
-            color: #000 !important;
+        div {
+            font-size: 0.7rem;
         }
     }
 }
 
-#info-dados-turno {
-    font-size: 0.9rem;
-    font-weight: normal;
-}
-
-// Alertas de victoria
-.alert-success {
-    background: linear-gradient(135deg, #d4edda, #c3e6cb);
-    border: 2px solid #28a745;
-    color: #155724;
-    animation: celebrate 2s ease-in-out infinite;
-}
-
-@keyframes celebrate {
-    0%, 100% { 
-        transform: scale(1) rotate(0deg);
-        box-shadow: 0 0 20px gold;
-    }
-    25% { 
-        transform: scale(1.02) rotate(1deg);
-        box-shadow: 0 0 30px gold;
-    }
-    75% { 
-        transform: scale(1.02) rotate(-1deg);
-        box-shadow: 0 0 30px gold;
-    }
+// Estados deshabilitados
+.btn:disabled {
+    opacity: 0.5;
+    transform: none !important;
 }
