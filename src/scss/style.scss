@@ -1,133 +1,512 @@
-@import "bootstrap/scss/bootstrap";
+// Importar Bootstrap
+@import 'bootstrap/scss/bootstrap';
 
-// Estilos personalizados para el Pong
+// Variables
+$celda-size: 100px;
+$celda-size-mobile: 80px;
+
+// Estilos generales
 body {
-    margin: 0;
-    padding: 0;
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
-    font-family: 'Arial', sans-serif;
-    overflow-x: hidden;
+    padding: 20px 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-#app {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 20px;
+.container {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
-.game-container {
+h1 {
+    color: #343a40;
+    font-weight: 700;
     text-align: center;
+    margin-bottom: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
-.score-display {
-    color: #fff;
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-bottom: 1.5rem;
-    letter-spacing: 2px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+// Estilos específicos para el Juego de la Oca
+.oca-board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    gap: 2px;
+    width: 600px;
+    height: 600px;
+    background: linear-gradient(135deg, #8BC34A, #4CAF50);
+    border: 3px solid #5D4037;
+    border-radius: 10px;
+    padding: 10px;
     
-    &.golden-point {
-        color: #ff6b6b;
+    .casilla {
+        background-color: rgba(255, 255, 255, 0.9);
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        font-size: 0.8rem;
+        min-height: 60px;
+        transition: all 0.3s ease;
+        
+        &:hover {
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        &.casilla-especial {
+            border-width: 2px;
+            font-weight: bold;
+        }
+        
+        &.oca { 
+            border-color: #FF9800; 
+            background-color: #FFF3E0; 
+        }
+        &.puente { 
+            border-color: #2196F3; 
+            background-color: #E3F2FD; 
+        }
+        &.posada { 
+            border-color: #795548; 
+            background-color: #EFEBE9; 
+        }
+        &.pozo { 
+            border-color: #607D8B; 
+            background-color: #CFD8DC; 
+        }
+        &.laberinto { 
+            border-color: #9C27B0; 
+            background-color: #F3E5F5; 
+        }
+        &.carcel { 
+            border-color: #F44336; 
+            background-color: #FFEBEE; 
+        }
+        &.calavera { 
+            border-color: #000; 
+            background-color: #424242; 
+            color: white; 
+        }
+        &.meta { 
+            border-color: #4CAF50; 
+            background-color: #C8E6C9; 
+            animation: pulse-meta 2s ease-in-out infinite;
+        }
+        
+        .numero-casilla {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #666;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 3px;
+            padding: 1px 3px;
+        }
+        
+        .fichas-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2px;
+            margin-top: 5px;
+            min-height: 20px;
+        }
+        
+        .icono-especial {
+            font-size: 1.2rem;
+            margin-top: 5px;
+            filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.3));
+        }
     }
 }
 
-.game-canvas {
-    border: 2px solid #fff;
-    background: #000;
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
-    margin: 0 auto;
-    display: block;
+@keyframes pulse-meta {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 
-.controls-info {
-    color: #ccc;
-    margin-top: 2rem;
-    text-align: center;
-    font-size: 0.9rem;
-    line-height: 1.6;
-    max-width: 600px;
+// Fichas de jugadores
+.ficha {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #000;
+    transition: all 0.3s ease;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
     
-    .player-controls {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 1rem 0;
+    &:hover {
+        transform: scale(1.2);
+    }
+    
+    &.ficha-jugador1 {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border-color: #003d7a;
+    }
+    
+    &.ficha-jugador2 {
+        background: linear-gradient(135deg, #dc3545, #a71e2a);
+        border-color: #7a1c24;
+    }
+    
+    &.ficha-jugador3 {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        border-color: #145523;
+    }
+    
+    &.ficha-jugador4 {
+        background: linear-gradient(135deg, #ffc107, #d39e00);
+        border-color: #8b6c00;
+    }
+}
+
+// Paneles de información de jugadores
+.player-info {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+    
+    &.active {
+        box-shadow: 0 0 15px gold;
+        transform: scale(1.05);
+        border-color: gold;
         
-        .player {
-            margin-bottom: 0.5rem;
-            
-            &:last-child {
-                margin-bottom: 0;
-            }
+        &::after {
+            content: '⬤ TURNO ACTUAL';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: gold;
+            color: #000;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: bold;
         }
     }
     
-    .game-rules {
-        background: rgba(255, 255, 255, 0.05);
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 1rem 0;
+    &.acumulando {
+        box-shadow: 0 0 15px #0dcaf0;
+        border-color: #0dcaf0;
+        
+        &::after {
+            content: '🎲 DADOS ACUM.';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #0dcaf0;
+            color: #000;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
     }
     
-    .game-controls {
-        color: #888;
-        font-size: 0.8rem;
-        margin-top: 1rem;
+    &.inactive {
+        opacity: 0.6;
+        background-color: #6c757d !important;
+        
+        &::after {
+            content: '⏸️ INACTIVO';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #6c757d;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+    }
+    
+    div:nth-child(3) { // Posición
+        font-size: 0.9rem;
+        font-weight: bold;
+    }
+    
+    div:nth-child(4) { // Dados
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #ffeb3b;
     }
 }
 
-.pause-overlay, .game-over-overlay {
-    background: rgba(0, 0, 0, 0.85);
-    border: 2px solid #fff;
-    border-radius: 10px;
-    padding: 2rem;
-    text-align: center;
-    max-width: 500px;
-    margin: 2rem auto;
+// Botones personalizados
+.btn-success {
+    background: linear-gradient(135deg, #198754, #146c43);
+    border: none;
+    font-weight: bold;
+    transition: all 0.3s ease;
     
-    h2 {
-        color: #4ecdc4;
-        font-size: 2.2rem;
-        font-weight: bold;
-        margin-bottom: 1rem;
+    &:hover {
+        background: linear-gradient(135deg, #146c43, #0f5132);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(25, 135, 84, 0.4);
     }
     
-    .winner {
-        color: #fff;
-        font-size: 1.8rem;
-        margin-bottom: 0.5rem;
+    &:active {
+        transform: translateY(0);
+    }
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
+    border: none;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    
+    &:hover {
+        background: linear-gradient(135deg, #0aa2c0, #088197);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(13, 202, 240, 0.4);
     }
     
-    .final-score {
-        color: #ff6b6b;
-        font-size: 1.5rem;
-        margin-bottom: 1.5rem;
+    &:active {
+        transform: translateY(0);
+    }
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    
+    &:hover {
+        background: linear-gradient(135deg, #5a6fd8, #6a4190);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
     }
     
-    .instructions {
-        color: #ccc;
-        font-size: 0.9rem;
+    &:active {
+        transform: translateY(0);
     }
+}
+
+// Estados del juego
+#estado {
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+#dado-resultado {
+    font-weight: bold;
+    min-height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    &.dados-multiples {
+        animation: pulse-dados 0.5s ease-in-out;
+    }
+}
+
+#mensaje-especial {
+    min-height: 1.5rem;
+    font-weight: bold;
+    padding: 0.5rem;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    
+    &.mensaje-importante {
+        background: rgba(255, 193, 7, 0.2);
+        border-left: 4px solid #ffc107;
+        padding-left: 1rem;
+    }
+}
+
+#info-dados {
+    font-weight: bold;
+    min-height: 1.2rem;
+    
+    &.text-success {
+        background: rgba(40, 167, 69, 0.1);
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        border-left: 3px solid #28a745;
+    }
+}
+
+// Animaciones
+@keyframes pulse-dados {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
 // Responsive
 @media (max-width: 768px) {
-    .score-display {
-        font-size: 2rem;
-    }
-    
-    .game-canvas {
+    .oca-board {
         width: 100%;
+        height: 70vw;
         max-width: 400px;
-        height: auto;
+        max-height: 400px;
+        
+        .casilla {
+            min-height: 40px;
+            font-size: 0.6rem;
+            
+            .ficha {
+                width: 12px;
+                height: 12px;
+            }
+            
+            .icono-especial {
+                font-size: 1rem;
+            }
+            
+            .numero-casilla {
+                font-size: 0.6rem;
+                padding: 0 2px;
+            }
+        }
     }
     
-    .controls-info {
-        font-size: 0.8rem;
+    .player-info {
+        margin-bottom: 15px;
+        padding: 1rem !important;
+        
+        h5 {
+            font-size: 1rem;
+        }
+        
+        div {
+            font-size: 0.8rem;
+        }
+        
+        .ficha {
+            width: 20px;
+            height: 20px;
+        }
+    }
+    
+    .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    #estado {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .container {
+        padding: 1rem;
+        margin: 0.5rem;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .oca-board {
+        gap: 1px;
+        padding: 5px;
+        
+        .casilla {
+            min-height: 35px;
+            
+            .fichas-container {
+                margin-top: 2px;
+            }
+        }
+    }
+    
+    .player-info {
+        &::after {
+            font-size: 0.6rem !important;
+            padding: 1px 3px !important;
+        }
+    }
+}
+
+// Estados de botones deshabilitados
+.btn:disabled {
+    opacity: 0.6;
+    transform: none !important;
+    box-shadow: none !important;
+    cursor: not-allowed;
+}
+
+// Mejoras de accesibilidad
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+// Focus visible para accesibilidad
+.btn:focus-visible {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+// Nuevos estilos para el mensaje de turno
+#info-turno {
+    .badge {
+        font-size: 1.1rem !important;
+        padding: 0.75rem 1.5rem !important;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        
+        &.bg-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3) !important;
+        }
+        &.bg-danger {
+            background: linear-gradient(135deg, #dc3545, #a71e2a) !important;
+        }
+        &.bg-success {
+            background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+        }
+        &.bg-warning {
+            background: linear-gradient(135deg, #ffc107, #d39e00) !important;
+            color: #000 !important;
+        }
+    }
+}
+
+#info-dados-turno {
+    font-size: 0.9rem;
+    font-weight: normal;
+}
+
+// Alertas de victoria
+.alert-success {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    border: 2px solid #28a745;
+    color: #155724;
+    animation: celebrate 2s ease-in-out infinite;
+}
+
+@keyframes celebrate {
+    0%, 100% { 
+        transform: scale(1) rotate(0deg);
+        box-shadow: 0 0 20px gold;
+    }
+    25% { 
+        transform: scale(1.02) rotate(1deg);
+        box-shadow: 0 0 30px gold;
+    }
+    75% { 
+        transform: scale(1.02) rotate(-1deg);
+        box-shadow: 0 0 30px gold;
     }
 }

@@ -1,9 +1,6 @@
-import "./scss/style.scss"
-import { PongGame } from './game/PongGame.js'
+import './scss/style.scss';
+import { iniciarJuego } from './game/juego.js';
 
-// Iniciar el juego cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
-    const gameContainer = document.getElementById('app');
-    const game = new PongGame(gameContainer);
-    game.start();
+    iniciarJuego();
 });
