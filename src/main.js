@@ -1,6 +1,23 @@
-import './scss/style.scss';
-import { iniciarJuego } from './game/juego.js';
+import "./scss/style.scss"
+import { router } from "./router";
 
-document.addEventListener('DOMContentLoaded', () => {
-    iniciarJuego();
+// eslint-disable-next-line
+import * as bootstrap from 'bootstrap'
+
+import { renderHeader } from "./components/header"
+import { renderFooter } from "./components/footer";
+
+document.addEventListener("DOMContentLoaded", () => {
+    const appDiv = document.querySelector('#app');
+    const headerDiv = document.querySelector('#header');
+    const footerDiv = document.querySelector('#footer');
+
+    headerDiv.innerHTML = renderHeader();
+    footerDiv.innerHTML = renderFooter();
+
+    router(window.location.hash, appDiv);
+    
+    window.addEventListener("hashchange", () => {
+        router(window.location.hash, appDiv);
+    });
 });

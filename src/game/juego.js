@@ -140,7 +140,8 @@ export function iniciarJuego() {
         jugadoresInactivos: new Set(),
         jugadoresTerminados: 0,
         turnoActual: 1,
-        tablero: crearTableroOca()
+        tablero: crearTableroOca(),
+        mantenerTurno: false
     };
 
     const tableroElement = document.getElementById('tablero');
@@ -156,7 +157,7 @@ export function iniciarJuego() {
     const tablaPosicionesElement = document.getElementById('tabla-posiciones');
     const cuerpoTablaElement = document.getElementById('cuerpo-tabla-posiciones');
 
-    // Crear tablero de la Oca (63 casillas) - misma función que antes
+    // Crear tablero de la Oca (63 casillas)
     function crearTableroOca() {
         const tablero = [];
         
@@ -201,94 +202,94 @@ export function iniciarJuego() {
     }
 
     function dibujarTablero() {
-    tableroElement.innerHTML = '';
-    tableroElement.className = 'oca-board mx-auto';
-    
-    // Crear tablero en forma de serpiente (8x8)
-    for (let fila = 0; fila < 8; fila++) {
-        for (let columna = 0; columna < 8; columna++) {
-            let numeroCasilla;
-            
-            // Calcular número de casilla en forma de serpiente
-            if (fila % 2 === 0) {
-                // Filas pares: izquierda a derecha (0, 1, 2, 3...)
-                numeroCasilla = fila * 8 + columna;
-            } else {
-                // Filas impares: derecha a izquierda (15, 14, 13, 12...)
-                numeroCasilla = (fila + 1) * 8 - 1 - columna;
-            }
-            
-            // Solo crear casillas del 1 al 63 (la 0 es la salida)
-            if (numeroCasilla > 0 && numeroCasilla <= 63) {
-                const casilla = document.createElement('div');
-                casilla.className = `casilla casilla-${numeroCasilla} ${estado.tablero[numeroCasilla].especial ? 'casilla-especial ' + estado.tablero[numeroCasilla].especial.tipo : ''}`;
-                casilla.dataset.numero = numeroCasilla;
-                casilla.style.gridRow = fila + 1;
-                casilla.style.gridColumn = columna + 1;
+        tableroElement.innerHTML = '';
+        tableroElement.className = 'oca-board mx-auto';
+        
+        // Crear tablero en forma de serpiente (8x8)
+        for (let fila = 0; fila < 8; fila++) {
+            for (let columna = 0; columna < 8; columna++) {
+                let numeroCasilla;
                 
-                const numero = document.createElement('div');
-                numero.className = 'numero-casilla';
-                numero.textContent = numeroCasilla;
-                casilla.appendChild(numero);
-                
-                const fichasContainer = document.createElement('div');
-                fichasContainer.className = 'fichas-container';
-                
-                Object.keys(estado.jugadores).forEach(jugadorId => {
-                    if (estado.jugadores[jugadorId].posicion === numeroCasilla) {
-                        const ficha = document.createElement('div');
-                        ficha.className = `ficha ficha-jugador${jugadorId} ${estado.jugadores[jugadorId].terminado ? 'terminado' : ''}`;
-                        ficha.title = estado.jugadores[jugadorId].nombre + (estado.jugadores[jugadorId].terminado ? ' (Terminado)' : '');
-                        fichasContainer.appendChild(ficha);
-                    }
-                });
-                
-                casilla.appendChild(fichasContainer);
-                
-                if (estado.tablero[numeroCasilla].especial) {
-                    const icono = document.createElement('div');
-                    icono.className = 'icono-especial';
-                    icono.innerHTML = obtenerIconoEspecial(estado.tablero[numeroCasilla].especial.tipo);
-                    casilla.appendChild(icono);
+                // Calcular número de casilla en forma de serpiente
+                if (fila % 2 === 0) {
+                    // Filas pares: izquierda a derecha (0, 1, 2, 3...)
+                    numeroCasilla = fila * 8 + columna;
+                } else {
+                    // Filas impares: derecha a izquierda (15, 14, 13, 12...)
+                    numeroCasilla = (fila + 1) * 8 - 1 - columna;
                 }
                 
-                tableroElement.appendChild(casilla);
-            } else if (numeroCasilla === 0) {
-                // Casilla de salida (posición 0)
-                const casilla = document.createElement('div');
-                casilla.className = 'casilla casilla-salida';
-                casilla.dataset.numero = 0;
-                casilla.style.gridRow = fila + 1;
-                casilla.style.gridColumn = columna + 1;
-                
-                const numero = document.createElement('div');
-                numero.className = 'numero-casilla';
-                numero.textContent = 'Salida';
-                casilla.appendChild(numero);
-                
-                const fichasContainer = document.createElement('div');
-                fichasContainer.className = 'fichas-container';
-                
-                Object.keys(estado.jugadores).forEach(jugadorId => {
-                    if (estado.jugadores[jugadorId].posicion === 0) {
-                        const ficha = document.createElement('div');
-                        ficha.className = `ficha ficha-jugador${jugadorId}`;
-                        ficha.title = estado.jugadores[jugadorId].nombre;
-                        fichasContainer.appendChild(ficha);
+                // Solo crear casillas del 1 al 63 (la 0 es la salida)
+                if (numeroCasilla > 0 && numeroCasilla <= 63) {
+                    const casilla = document.createElement('div');
+                    casilla.className = `casilla casilla-${numeroCasilla} ${estado.tablero[numeroCasilla].especial ? 'casilla-especial ' + estado.tablero[numeroCasilla].especial.tipo : ''}`;
+                    casilla.dataset.numero = numeroCasilla;
+                    casilla.style.gridRow = fila + 1;
+                    casilla.style.gridColumn = columna + 1;
+                    
+                    const numero = document.createElement('div');
+                    numero.className = 'numero-casilla';
+                    numero.textContent = numeroCasilla;
+                    casilla.appendChild(numero);
+                    
+                    const fichasContainer = document.createElement('div');
+                    fichasContainer.className = 'fichas-container';
+                    
+                    Object.keys(estado.jugadores).forEach(jugadorId => {
+                        if (estado.jugadores[jugadorId].posicion === numeroCasilla) {
+                            const ficha = document.createElement('div');
+                            ficha.className = `ficha ficha-jugador${jugadorId} ${estado.jugadores[jugadorId].terminado ? 'terminado' : ''}`;
+                            ficha.title = estado.jugadores[jugadorId].nombre + (estado.jugadores[jugadorId].terminado ? ' (Terminado)' : '');
+                            fichasContainer.appendChild(ficha);
+                        }
+                    });
+                    
+                    casilla.appendChild(fichasContainer);
+                    
+                    if (estado.tablero[numeroCasilla].especial) {
+                        const icono = document.createElement('div');
+                        icono.className = 'icono-especial';
+                        icono.innerHTML = obtenerIconoEspecial(estado.tablero[numeroCasilla].especial.tipo);
+                        casilla.appendChild(icono);
                     }
-                });
-                
-                casilla.appendChild(fichasContainer);
-                tableroElement.appendChild(casilla);
+                    
+                    tableroElement.appendChild(casilla);
+                } else if (numeroCasilla === 0) {
+                    // Casilla de salida (posición 0)
+                    const casilla = document.createElement('div');
+                    casilla.className = 'casilla casilla-salida';
+                    casilla.dataset.numero = 0;
+                    casilla.style.gridRow = fila + 1;
+                    casilla.style.gridColumn = columna + 1;
+                    
+                    const numero = document.createElement('div');
+                    numero.className = 'numero-casilla';
+                    numero.textContent = 'Salida';
+                    casilla.appendChild(numero);
+                    
+                    const fichasContainer = document.createElement('div');
+                    fichasContainer.className = 'fichas-container';
+                    
+                    Object.keys(estado.jugadores).forEach(jugadorId => {
+                        if (estado.jugadores[jugadorId].posicion === 0) {
+                            const ficha = document.createElement('div');
+                            ficha.className = `ficha ficha-jugador${jugadorId}`;
+                            ficha.title = estado.jugadores[jugadorId].nombre;
+                            fichasContainer.appendChild(ficha);
+                        }
+                    });
+                    
+                    casilla.appendChild(fichasContainer);
+                    tableroElement.appendChild(casilla);
+                }
             }
         }
+        
+        actualizarPosiciones();
+        actualizarEstadosJugadores();
+        actualizarInfoTurno();
+        actualizarInfoCarrera();
     }
-    
-    actualizarPosiciones();
-    actualizarEstadosJugadores();
-    actualizarInfoTurno();
-    actualizarInfoCarrera();
-}
 
     function obtenerIconoEspecial(tipo) {
         const iconos = {
@@ -308,19 +309,15 @@ export function iniciarJuego() {
         const jugador = estado.jugadores[estado.jugadorActual];
         
         if (jugador.terminado) {
-            // Si el jugador actual ya terminó, buscar siguiente
             siguienteTurno();
             return;
         }
         
-        // Actualizar el nombre del jugador actual
         jugadorActualElement.textContent = jugador.nombre;
         
-        // Actualizar el color del badge según el jugador
         const badge = infoTurnoElement.querySelector('.badge');
         badge.className = `badge bg-${jugador.color} fs-5 p-3`;
         
-        // Actualizar información de dados acumulados
         if (jugador.dadosAcumulados > 1) {
             infoDadosTurnoElement.textContent = `(Tirará ${jugador.dadosAcumulados} dados)`;
             infoDadosTurnoElement.className = 'text-warning fw-bold';
@@ -329,7 +326,6 @@ export function iniciarJuego() {
             infoDadosTurnoElement.className = '';
         }
         
-        // Limpiar mensajes anteriores
         dadoResultadoElement.textContent = '';
         mensajeEspecialElement.textContent = 'Es tu turno. ¡Tira el dado o pasa turno para acumular más dados!';
         mensajeEspecialElement.className = 'h6 text-success';
@@ -356,11 +352,9 @@ export function iniciarJuego() {
 
         const numDados = jugador.dadosAcumulados;
         
-        // Incrementar contador de turnos
         jugador.turnos++;
         estado.turnoActual++;
         
-        // Tirar los dados acumulados
         let totalDado = 0;
         const resultados = [];
         
@@ -373,7 +367,6 @@ export function iniciarJuego() {
         estado.valorDado = totalDado;
         estado.dadoTirado = true;
         
-        // Mostrar resultados
         if (numDados === 1) {
             dadoResultadoElement.textContent = `🎲 ${jugador.nombre} ha sacado un ${estado.valorDado}`;
         } else {
@@ -383,11 +376,9 @@ export function iniciarJuego() {
         mensajeEspecialElement.textContent = `Avanzando ${estado.valorDado} casillas...`;
         mensajeEspecialElement.className = 'h6 text-primary';
         
-        // Resetear dados acumulados después de tirar
         jugador.dadosAcumulados = 1;
         jugador.pasoUltimoTurno = false;
         
-        // Mover jugador después de un breve delay
         setTimeout(moverJugador, 1500);
     }
 
@@ -397,11 +388,9 @@ export function iniciarJuego() {
         const jugador = estado.jugadores[estado.jugadorActual];
         if (jugador.terminado) return;
 
-        // Incrementar contador de turnos
         jugador.turnos++;
         estado.turnoActual++;
         
-        // Acumular un dado extra para el próximo turno (máximo 3 dados)
         if (jugador.dadosAcumulados < 3) {
             jugador.dadosAcumulados++;
             jugador.pasoUltimoTurno = true;
@@ -410,7 +399,6 @@ export function iniciarJuego() {
             mensajeEspecialElement.textContent = `¡Estrategia! Próximo turno tirarás ${jugador.dadosAcumulados} dados`;
             mensajeEspecialElement.className = 'h6 text-info';
             
-            // Cambiar turno después de un breve delay
             setTimeout(() => {
                 estado.dadoTirado = false;
                 siguienteTurno();
@@ -425,16 +413,149 @@ export function iniciarJuego() {
         const jugador = estado.jugadores[estado.jugadorActual];
         const nuevaPosicion = jugador.posicion + estado.valorDado;
         
-        // Verificar si se pasa de la meta
         if (nuevaPosicion > 63) {
             const exceso = nuevaPosicion - 63;
             jugador.posicion = 63 - exceso;
             mensajeEspecialElement.textContent = "¡Te pasaste de la meta! Retrocedes las casillas sobrantes.";
+            procesarDespuesDeMovimiento(jugador);
         } else {
-            jugador.posicion = nuevaPosicion;
+            animarMovimiento(jugador, jugador.posicion, nuevaPosicion, () => {
+                jugador.posicion = nuevaPosicion;
+                procesarDespuesDeMovimiento(jugador);
+            });
+        }
+    }
+
+    function animarMovimiento(jugador, desde, hasta, callback) {
+        const pasos = Math.abs(hasta - desde);
+        const direccion = hasta > desde ? 1 : -1;
+        let pasoActual = 0;
+        
+        tirarDadoBtn.disabled = true;
+        pasarTurnoBtn.disabled = true;
+        
+        function siguientePaso() {
+            if (pasoActual <= pasos) {
+                const posicionIntermedia = desde + (pasoActual * direccion);
+                actualizarPosicionVisual(jugador, posicionIntermedia);
+                pasoActual++;
+                setTimeout(siguientePaso, pasos > 10 ? 100 : 200);
+            } else {
+                tirarDadoBtn.disabled = false;
+                pasarTurnoBtn.disabled = false;
+                callback();
+            }
         }
         
-        // Verificar si llegó a la meta
+        siguientePaso();
+    }
+
+    function animarSaltoOca(jugador, desde, hasta, callback) {
+        mensajeEspecialElement.textContent += " ¡Salto de oca!";
+        
+        setTimeout(() => {
+            jugador.posicion = hasta;
+            dibujarTablero();
+            callback();
+        }, 1000);
+    }
+
+    function actualizarPosicionVisual(jugador, posicionTemporal) {
+        const estadoTemporal = {
+            ...estado,
+            jugadores: {
+                ...estado.jugadores,
+                [estado.jugadorActual]: {
+                    ...jugador,
+                    posicion: posicionTemporal
+                }
+            }
+        };
+        
+        dibujarTableroTemporal(estadoTemporal);
+    }
+
+    function dibujarTableroTemporal(estadoTemp) {
+        const tableroElement = document.getElementById('tablero');
+        tableroElement.innerHTML = '';
+        tableroElement.className = 'oca-board mx-auto';
+        
+        for (let fila = 0; fila < 8; fila++) {
+            for (let columna = 0; columna < 8; columna++) {
+                let numeroCasilla;
+                
+                if (fila % 2 === 0) {
+                    numeroCasilla = fila * 8 + columna;
+                } else {
+                    numeroCasilla = (fila + 1) * 8 - 1 - columna;
+                }
+                
+                if (numeroCasilla > 0 && numeroCasilla <= 63) {
+                    const casilla = document.createElement('div');
+                    casilla.className = `casilla casilla-${numeroCasilla} ${estadoTemp.tablero[numeroCasilla].especial ? 'casilla-especial ' + estadoTemp.tablero[numeroCasilla].especial.tipo : ''} ${numeroCasilla === estadoTemp.jugadores[estadoTemp.jugadorActual].posicion ? 'actual' : ''}`;
+                    casilla.dataset.numero = numeroCasilla;
+                    casilla.style.gridRow = fila + 1;
+                    casilla.style.gridColumn = columna + 1;
+                    
+                    const numero = document.createElement('div');
+                    numero.className = 'numero-casilla';
+                    numero.textContent = numeroCasilla;
+                    casilla.appendChild(numero);
+                    
+                    const fichasContainer = document.createElement('div');
+                    fichasContainer.className = 'fichas-container';
+                    
+                    Object.keys(estadoTemp.jugadores).forEach(jugadorId => {
+                        if (estadoTemp.jugadores[jugadorId].posicion === numeroCasilla) {
+                            const ficha = document.createElement('div');
+                            ficha.className = `ficha ficha-jugador${jugadorId} ${estadoTemp.jugadores[jugadorId].terminado ? 'terminado' : ''} ${parseInt(jugadorId) === estadoTemp.jugadorActual ? 'animando' : ''}`;
+                            ficha.title = estadoTemp.jugadores[jugadorId].nombre + (estadoTemp.jugadores[jugadorId].terminado ? ' (Terminado)' : '');
+                            fichasContainer.appendChild(ficha);
+                        }
+                    });
+                    
+                    casilla.appendChild(fichasContainer);
+                    
+                    if (estadoTemp.tablero[numeroCasilla].especial) {
+                        const icono = document.createElement('div');
+                        icono.className = 'icono-especial';
+                        icono.innerHTML = obtenerIconoEspecial(estadoTemp.tablero[numeroCasilla].especial.tipo);
+                        casilla.appendChild(icono);
+                    }
+                    
+                    tableroElement.appendChild(casilla);
+                } else if (numeroCasilla === 0) {
+                    const casilla = document.createElement('div');
+                    casilla.className = `casilla casilla-salida ${numeroCasilla === estadoTemp.jugadores[estadoTemp.jugadorActual].posicion ? 'actual' : ''}`;
+                    casilla.dataset.numero = 0;
+                    casilla.style.gridRow = fila + 1;
+                    casilla.style.gridColumn = columna + 1;
+                    
+                    const numero = document.createElement('div');
+                    numero.className = 'numero-casilla';
+                    numero.textContent = 'Salida';
+                    casilla.appendChild(numero);
+                    
+                    const fichasContainer = document.createElement('div');
+                    fichasContainer.className = 'fichas-container';
+                    
+                    Object.keys(estadoTemp.jugadores).forEach(jugadorId => {
+                        if (estadoTemp.jugadores[jugadorId].posicion === 0) {
+                            const ficha = document.createElement('div');
+                            ficha.className = `ficha ficha-jugador${jugadorId} ${parseInt(jugadorId) === estadoTemp.jugadorActual ? 'animando' : ''}`;
+                            ficha.title = estadoTemp.jugadores[jugadorId].nombre;
+                            fichasContainer.appendChild(ficha);
+                        }
+                    });
+                    
+                    casilla.appendChild(fichasContainer);
+                    tableroElement.appendChild(casilla);
+                }
+            }
+        }
+    }
+
+    function procesarDespuesDeMovimiento(jugador) {
         if (jugador.posicion === 63 && !jugador.terminado) {
             jugador.terminado = true;
             jugador.posicionFinal = estado.jugadoresTerminados + 1;
@@ -442,22 +563,19 @@ export function iniciarJuego() {
             mensajeEspecialElement.textContent = `🎉 ¡${jugador.nombre} ha llegado a la meta en ${jugador.posicionFinal}° lugar!`;
             mensajeEspecialElement.className = 'h6 text-success fw-bold';
             
-            // Verificar si todos han terminado
             if (estado.jugadoresTerminados === Object.keys(estado.jugadores).length) {
                 finalizarJuego();
                 return;
             }
         } else {
-            // Verificar casilla especial solo si no ha terminado
             verificarCasillaEspecial(jugador);
         }
         
         estado.dadoTirado = false;
         dibujarTablero();
         
-        // Cambiar turno (a menos que haya efecto especial que lo impida)
         if (!estado.mantenerTurno) {
-            setTimeout(siguienteTurno, 2000);
+            setTimeout(siguienteTurno, 1500);
         } else {
             estado.mantenerTurno = false;
             mensajeEspecialElement.textContent += " ¡Tira otra vez!";
@@ -474,7 +592,6 @@ export function iniciarJuego() {
             siguienteJugador = siguienteJugador % 4 + 1;
             intentos++;
             
-            // Si todos los jugadores están terminados o inactivos, reactivar
             if (intentos > 4) {
                 estado.jugadoresInactivos.clear();
                 break;
@@ -500,14 +617,24 @@ export function iniciarJuego() {
             case "oca":
                 const nuevaPosOca = encontrarSiguienteOca(jugador.posicion);
                 if (nuevaPosOca !== jugador.posicion) {
-                    jugador.posicion = nuevaPosOca;
-                    estado.mantenerTurno = true;
+                    animarSaltoOca(jugador, jugador.posicion, nuevaPosOca, () => {
+                        estado.mantenerTurno = true;
+                        dibujarTablero();
+                        if (estado.jugadoresInactivos.size > 0) {
+                            liberarDelPozo();
+                        }
+                    });
                 }
                 break;
                 
             case "puente":
-                jugador.posicion = especial.movimiento;
-                estado.mantenerTurno = true;
+                animarSaltoOca(jugador, jugador.posicion, especial.movimiento, () => {
+                    estado.mantenerTurno = true;
+                    dibujarTablero();
+                    if (estado.jugadoresInactivos.size > 0) {
+                        liberarDelPozo();
+                    }
+                });
                 break;
                 
             case "posada":
@@ -523,15 +650,17 @@ export function iniciarJuego() {
                 
             case "laberinto":
             case "calavera":
-                jugador.posicion = especial.movimiento;
+                animarMovimiento(jugador, jugador.posicion, especial.movimiento, () => {
+                    jugador.posicion = especial.movimiento;
+                    dibujarTablero();
+                });
                 break;
         }
         
-        if ((especial.tipo === "oca" || especial.tipo === "puente") && estado.jugadoresInactivos.size > 0) {
+        if ((especial.tipo === "oca" || especial.tipo === "puente") && 
+            !estado.mantenerTurno && estado.jugadoresInactivos.size > 0) {
             liberarDelPozo();
         }
-        
-        dibujarTablero();
     }
 
     function liberarDelPozo() {
@@ -553,19 +682,13 @@ export function iniciarJuego() {
 
     function finalizarJuego() {
         estado.juegoActivo = false;
-        
-        // Mostrar tabla de posiciones
         mostrarTablaPosiciones();
-        
-        // Deshabilitar botones
         tirarDadoBtn.disabled = true;
         pasarTurnoBtn.disabled = true;
-        
         infoTurnoElement.innerHTML = `<div class="alert alert-success h3">🎉 ¡Carrera Terminada! 🎉</div>`;
     }
 
     function mostrarTablaPosiciones() {
-        // Ordenar jugadores por posición final
         const jugadoresOrdenados = Object.values(estado.jugadores)
             .sort((a, b) => a.posicionFinal - b.posicionFinal);
         
@@ -613,7 +736,6 @@ export function iniciarJuego() {
             document.getElementById(`pos-jugador${jugadorId}`).textContent = estado.jugadores[jugadorId].posicion;
             document.getElementById(`dados-jugador${jugadorId}`).textContent = estado.jugadores[jugadorId].dadosAcumulados;
             
-            // Actualizar estado del jugador
             const estadoElement = document.getElementById(`estado-jugador${jugadorId}`);
             if (estado.jugadores[jugadorId].terminado) {
                 estadoElement.innerHTML = `<span class="badge bg-success">🥇 ${estado.jugadores[jugadorId].posicionFinal}° Lugar</span>`;
