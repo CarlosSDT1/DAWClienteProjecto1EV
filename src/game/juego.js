@@ -350,10 +350,11 @@ export function iniciarJuego() {
         const jugador = estado.jugadores[estado.jugadorActual];
         if (jugador.terminado) return;
 
-        const numDados = jugador.dadosAcumulados;
+        // Resetear estados al inicio del turno
+        estado.mantenerTurno = false;
         
+        const numDados = jugador.dadosAcumulados;
         jugador.turnos++;
-        estado.turnoActual++;
         
         let totalDado = 0;
         const resultados = [];
@@ -377,7 +378,6 @@ export function iniciarJuego() {
         mensajeEspecialElement.className = 'h6 text-primary';
         
         jugador.dadosAcumulados = 1;
-        jugador.pasoUltimoTurno = false;
         
         setTimeout(moverJugador, 1500);
     }
@@ -389,11 +389,9 @@ export function iniciarJuego() {
         if (jugador.terminado) return;
 
         jugador.turnos++;
-        estado.turnoActual++;
         
         if (jugador.dadosAcumulados < 3) {
             jugador.dadosAcumulados++;
-            jugador.pasoUltimoTurno = true;
             
             dadoResultadoElement.textContent = `⏭️ ${jugador.nombre} pasa el turno`;
             mensajeEspecialElement.textContent = `¡Estrategia! Próximo turno tirarás ${jugador.dadosAcumulados} dados`;
@@ -448,16 +446,6 @@ export function iniciarJuego() {
         }
         
         siguientePaso();
-    }
-
-    function animarSaltoOca(jugador, desde, hasta, callback) {
-        mensajeEspecialElement.textContent += " ¡Salto de oca!";
-        
-        setTimeout(() => {
-            jugador.posicion = hasta;
-            dibujarTablero();
-            callback();
-        }, 1000);
     }
 
     function actualizarPosicionVisual(jugador, posicionTemporal) {
@@ -556,6 +544,7 @@ export function iniciarJuego() {
     }
 
     function procesarDespuesDeMovimiento(jugador) {
+        // Verificar si llegó a la meta
         if (jugador.posicion === 63 && !jugador.terminado) {
             jugador.terminado = true;
             jugador.posicionFinal = estado.jugadoresTerminados + 1;
@@ -567,21 +556,20 @@ export function iniciarJuego() {
                 finalizarJuego();
                 return;
             }
-        } else {
-            verificarCasillaEspecial(jugador);
         }
         
-        estado.dadoTirado = false;
-        dibujarTablero();
+        // Verificar casilla especial
+        verificarCasillaEspecial(jugador);
         
+        // Si después de verificar la casilla especial NO tenemos turno extra,
+        // entonces continuar con el flujo normal
         if (!estado.mantenerTurno) {
-            setTimeout(siguienteTurno, 1500);
-        } else {
-            estado.mantenerTurno = false;
-            mensajeEspecialElement.textContent += " ¡Tira otra vez!";
             estado.dadoTirado = false;
-            actualizarInfoTurno();
+            dibujarTablero();
+            setTimeout(siguienteTurno, 1500);
         }
+        // Si estado.mantenerTurno es true, la función verificarCasillaEspecial
+        // ya se encargó de preparar el siguiente turno
     }
 
     function siguienteTurno() {
@@ -610,34 +598,75 @@ export function iniciarJuego() {
         if (!casilla.especial) return;
         
         const especial = casilla.especial;
-        mensajeEspecialElement.textContent = `${jugador.nombre}: ${especial.mensaje}`;
-        mensajeEspecialElement.className = 'h6 text-warning';
         
         switch (especial.tipo) {
             case "oca":
-                const nuevaPosOca = encontrarSiguienteOca(jugador.posicion);
-                if (nuevaPosOca !== jugador.posicion) {
-                    animarSaltoOca(jugador, jugador.posicion, nuevaPosOca, () => {
-                        estado.mantenerTurno = true;
-                        dibujarTablero();
-                        if (estado.jugadoresInactivos.size > 0) {
-                            liberarDelPozo();
-                        }
-                    });
-                }
-                break;
+    const nuevaPosOca = encontrarSiguienteOca(jugador.posicion);
+    if (nuevaPosOca !== jugador.posicion) {
+        mensajeEspecialElement.textContent = `${jugador.nombre}: ${especial.mensaje}`;
+        mensajeEspecialElement.className = 'h6 text-warning';
+        
+        // ⚠️ Avisar antes del setTimeout
+        estado.mantenerTurno = true;
+
+        tirarDadoBtn.disabled = true;
+        pasarTurnoBtn.disabled = true;
+        
+        setTimeout(() => {
+            jugador.posicion = nuevaPosOca;
+            dibujarTablero();
+            
+            estado.dadoTirado = false; // puede tirar otra vez
+
+            tirarDadoBtn.disabled = false;
+            pasarTurnoBtn.disabled = false;
+
+            mensajeEspecialElement.textContent += " ¡Tira otra vez!";
+            actualizarInfoTurno();
+
+            if (estado.jugadoresInactivos.size > 0) {
+                liberarDelPozo();
+            }
+        }, 1000);
+
+        return; // evitar que siga el flujo normal
+    }
+    break;
+
                 
             case "puente":
-                animarSaltoOca(jugador, jugador.posicion, especial.movimiento, () => {
-                    estado.mantenerTurno = true;
-                    dibujarTablero();
-                    if (estado.jugadoresInactivos.size > 0) {
-                        liberarDelPozo();
-                    }
-                });
-                break;
+    mensajeEspecialElement.textContent = `${jugador.nombre}: ${especial.mensaje}`;
+    mensajeEspecialElement.className = 'h6 text-warning';
+    
+    // Avisar antes del setTimeout
+    estado.mantenerTurno = true;
+
+    tirarDadoBtn.disabled = true;
+    pasarTurnoBtn.disabled = true;
+    
+    setTimeout(() => {
+        jugador.posicion = especial.movimiento;
+        dibujarTablero();
+        
+        // Permitir tirar de nuevo inmediatamente
+        estado.dadoTirado = false;
+        
+        // Habilitar botones y mostrar mensaje
+        tirarDadoBtn.disabled = false;
+        pasarTurnoBtn.disabled = false;
+        
+        mensajeEspecialElement.textContent += " ¡Tira otra vez!";
+        actualizarInfoTurno();
+        
+        if (estado.jugadoresInactivos.size > 0) {
+            liberarDelPozo();
+        }
+    }, 1000);
+    
+    return; // Salir para evitar que avance el turno
                 
             case "posada":
+                // No hacer nada especial, el jugador pierde el turno automáticamente
                 break;
                 
             case "pozo":
@@ -650,6 +679,7 @@ export function iniciarJuego() {
                 
             case "laberinto":
             case "calavera":
+                // Para retrocesos, usar animación paso a paso
                 animarMovimiento(jugador, jugador.posicion, especial.movimiento, () => {
                     jugador.posicion = especial.movimiento;
                     dibujarTablero();
@@ -657,10 +687,8 @@ export function iniciarJuego() {
                 break;
         }
         
-        if ((especial.tipo === "oca" || especial.tipo === "puente") && 
-            !estado.mantenerTurno && estado.jugadoresInactivos.size > 0) {
-            liberarDelPozo();
-        }
+        // Si llegamos aquí, es una casilla especial que NO da turno extra
+        // Continuar con el flujo normal del juego
     }
 
     function liberarDelPozo() {
@@ -701,15 +729,15 @@ export function iniciarJuego() {
             
             switch (index) {
                 case 0:
-                    posicionTexto = '🥇 1°';
+                    posicionTexto = '1°';
                     claseFila = 'table-success';
                     break;
                 case 1:
-                    posicionTexto = '🥈 2°';
+                    posicionTexto = '2°';
                     claseFila = 'table-info';
                     break;
                 case 2:
-                    posicionTexto = '🥉 3°';
+                    posicionTexto = '3°';
                     claseFila = 'table-warning';
                     break;
                 default:
