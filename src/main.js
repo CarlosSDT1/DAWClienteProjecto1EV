@@ -1,7 +1,7 @@
 // main.js
 import "./scss/style.scss";
 import { router } from "./router";
-import { userSubject$ } from "./services/supaservice.js";
+import { userSubject$, getSession } from "./services/supaservice.js";
 
 // eslint-disable-next-line
 import * as bootstrap from 'bootstrap';
@@ -14,6 +14,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const headerDiv = document.querySelector('#header');
     const footerDiv = document.querySelector('#footer');
 
+    // Verificar si el usuario está autenticado o es invitado
+    const userId = getSession();
+    const isGuest = localStorage.getItem('guestMode') === 'true';
+    
+    // Si no hay usuario ni invitado, forzar login
+    if (!userId && !isGuest) {
+        window.location.hash = '#login';
+    } else if (userId || isGuest) {
+        window.location.hash = '#game';
+    }
+
     // Usar el componente web para el header
     headerDiv.innerHTML = `<game-header></game-header>`;
     footerDiv.innerHTML = renderFooter();
@@ -23,7 +34,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Actualizar el header si es necesario
         const header = document.querySelector('game-header');
         if (header) {
-            header.innerHTML = header.renderHeader();
+            // Re-renderizar el header
+            header.innerHTML = renderHeader(); // Necesitaríamos exportar renderHeader
+            setupHeaderEvents(); // Y setupHeaderEvents
         }
     });
 

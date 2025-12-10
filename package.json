@@ -16,6 +16,20 @@
   },
   "devDependencies": {
     "sass": "^1.93.2",
-    "vite": "^7.1.7"
-  }
+    "vite": "^7.1.7",
+    "vitest": "^4.0.15"
+  },
+  "description": "",
+  "main": "vite.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CarlosSDT1/DAWClienteProjecto1EV.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CarlosSDT1/DAWClienteProjecto1EV/issues"
+  },
+  "homepage": "https://github.com/CarlosSDT1/DAWClienteProjecto1EV#readme"
 }

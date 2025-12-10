@@ -57,14 +57,18 @@ const renderLogin = (method) => {
                 await login(data);
                 messageDiv.innerHTML = '<div class="alert alert-success">¡Inicio de sesión exitoso! Redirigiendo...</div>';
                 setTimeout(() => {
-                    window.location.hash = '#game';
-                }, 1500);
+                    // Redirigir directamente al juego y recargar
+                    window.location.href = window.location.origin + window.location.pathname + '#game';
+                    window.location.reload();
+                }, 1000);
             } else {
                 await register(data);
                 messageDiv.innerHTML = '<div class="alert alert-success">¡Cuenta creada! Por favor inicia sesión.</div>';
                 setTimeout(() => {
-                    window.location.hash = '#login';
-                }, 1500);
+                    // Redirigir al login para que inicien sesión
+                    window.location.href = window.location.origin + window.location.pathname + '#login';
+                    window.location.reload();
+                }, 1000);
             }
         } catch (error) {
             messageDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message || 'Error desconocido'}</div>`;
@@ -77,23 +81,44 @@ const renderLogin = (method) => {
         localStorage.removeItem('user_id');
         messageDiv.innerHTML = '<div class="alert alert-info">Modo invitado activado. Redirigiendo...</div>';
         setTimeout(() => {
-            window.location.hash = '#game';
+            // Redirigir directamente al juego y recargar
+            window.location.href = window.location.origin + window.location.pathname + '#game';
+            window.location.reload();
         }, 1000);
     });
 
     return div;
 }
 
+// Función para verificar si ya está autenticado
+export function checkIfAlreadyAuthenticated() {
+    const userId = localStorage.getItem('user_id');
+    const isGuest = localStorage.getItem('guestMode') === 'true';
+    
+    if (userId || isGuest) {
+        // Si ya está autenticado, redirigir al juego
+        window.location.hash = '#game';
+        return true;
+    }
+    return false;
+}
+
 // Componentes web personalizados como en el ejemplo de tu profesor
 class GameLogin extends HTMLElement {
     connectedCallback() {
-        this.appendChild(renderLogin('login'));
+        // Verificar si ya está autenticado antes de mostrar el login
+        if (!checkIfAlreadyAuthenticated()) {
+            this.appendChild(renderLogin('login'));
+        }
     }
 }
 
 class GameRegister extends HTMLElement {
     connectedCallback() {
-        this.appendChild(renderLogin('register'));
+        // Verificar si ya está autenticado antes de mostrar el registro
+        if (!checkIfAlreadyAuthenticated()) {
+            this.appendChild(renderLogin('register'));
+        }
     }
 }
 

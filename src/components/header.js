@@ -1,7 +1,7 @@
 // components/header.js
 import { userSubject$, getSession } from "../services/supaservice.js";
 
-export { renderHeader };
+export { renderHeader, setupHeaderEvents };
 
 function renderHeader() {
     const userId = getSession();
@@ -10,13 +10,12 @@ function renderHeader() {
     let userInfo = "🎮 Invitado";
     let dropdownMenu = `
         <li><a class="dropdown-item" href="#login">Iniciar Sesión</a></li>
-        <li><a class="dropdown-item" href="#register">Crear Cuenta</a></li>
         <li><hr class="dropdown-divider"></li>
         <li><a class="dropdown-item" href="#game">Jugar como Invitado</a></li>
     `;
     
     if (userId) {
-        userInfo = "👤 Jugador";
+        userInfo = "Jugador";
         dropdownMenu = `
             <li><a class="dropdown-item" href="#profile">Mi Perfil</a></li>
             <li><a class="dropdown-item" href="#stats">Estadísticas</a></li>
@@ -24,9 +23,9 @@ function renderHeader() {
             <li><a class="dropdown-item" href="#" id="logoutBtn">Cerrar Sesión</a></li>
         `;
     } else if (isGuest) {
+        userInfo = "Invitado";
         dropdownMenu = `
             <li><a class="dropdown-item" href="#login">Iniciar Sesión</a></li>
-            <li><a class="dropdown-item" href="#register">Crear Cuenta</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="#" id="logoutBtn">Salir del modo Invitado</a></li>
         `;
@@ -70,7 +69,7 @@ function renderHeader() {
 }
 
 // Función para manejar eventos del header
-export function setupHeaderEvents() {
+ function setupHeaderEvents() {
     document.addEventListener('click', (e) => {
         if (e.target.id === 'logoutBtn') {
             e.preventDefault();
@@ -82,12 +81,26 @@ export function setupHeaderEvents() {
             localStorage.removeItem('user');
             localStorage.removeItem('guestMode');
             
-            // Recargar página
-            window.location.hash = '#game';
+            // Recargar página y redirigir al login
+            window.location.href = window.location.origin + window.location.pathname + '#login';
             window.location.reload();
         }
     });
 }
+
+// Función para actualizar el header dinámicamente
+export function updateHeader() {
+    const headerElement = document.querySelector('game-header');
+    if (headerElement) {
+        headerElement.innerHTML = renderHeader();
+        setupHeaderEvents();
+    }
+}
+
+// Suscribirse a cambios en el usuario para actualizar el header
+userSubject$.subscribe(() => {
+    updateHeader();
+});
 
 // Componente web personalizado
 class GameHeader extends HTMLElement {
