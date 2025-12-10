@@ -4,7 +4,6 @@ import { getSession } from "./services/supaservice.js";
 
 // Importar los componentes para que se registren
 import "./components/login.js";      // game-login, game-register
-import "./components/profile.js";    // game-profile
 import "./components/stats.js";      // game-stats
 
 export { router };
@@ -14,7 +13,6 @@ const routes = new Map([
     ['#game', 'game-content'],
     ['#login', 'game-login'],
     ['#register', 'game-register'],
-    ['#profile', 'game-profile'],
     ['#stats', 'game-stats']
 ]);
 
@@ -28,7 +26,7 @@ function checkAuth(route) {
     const isGuest = localStorage.getItem('guestMode') === 'true';
     
     // Rutas que requieren autenticación
-    const protectedRoutes = ['#game', '#profile', '#stats'];
+    const protectedRoutes = ['#game', '#stats'];
     const authRoutes = ['#login', '#register'];
     
     // Si está en ruta protegida y no está autenticado

@@ -17,7 +17,6 @@ function renderHeader() {
     if (userId) {
         userInfo = "Jugador";
         dropdownMenu = `
-            <li><a class="dropdown-item" href="#profile">Mi Perfil</a></li>
             <li><a class="dropdown-item" href="#stats">Estadísticas</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="#" id="logoutBtn">Cerrar Sesión</a></li>
@@ -51,6 +50,7 @@ function renderHeader() {
                     <li class="nav-item">
                         <a class="nav-link ${window.location.hash === '#stats' ? 'active' : ''}" href="#stats">Estadísticas</a>
                     </li>
+                    
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item dropdown">

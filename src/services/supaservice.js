@@ -157,21 +157,46 @@ const getUserStats = async () => {
     const stats = await getData("player_stats", { user_id: userId });
     return stats[0] || null;
 }
-
-const updateUserStats = async (stats) => {
+const incrementUserStats = async (statsToUpdate) => {
     const userId = getSession();
     if (!userId) return null;
     
-    const existingStats = await getUserStats();
+    // Obtener estadísticas actuales
+    const currentStats = await getUserStats();
     
-    if (existingStats) {
-        return await updateData("player_stats", existingStats.id, stats);
+    if (currentStats) {
+        // Incrementar valores existentes
+        const updatedStats = {
+            games_played: (currentStats.games_played || 0) + (statsToUpdate.games_played || 0),
+            games_won: (currentStats.games_won || 0) + (statsToUpdate.games_won || 0),
+            total_turns: (currentStats.total_turns || 0) + (statsToUpdate.total_turns || 0),
+            last_played: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        
+        return await updateData("player_stats", currentStats.id, updatedStats);
     } else {
-        return await createGame({
+        // Crear nuevas estadísticas
+        const newStats = {
             user_id: userId,
-            ...stats
+            games_played: statsToUpdate.games_played || 0,
+            games_won: statsToUpdate.games_won || 0,
+            total_turns: statsToUpdate.total_turns || 0,
+            last_played: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        
+        return await fetchSupabase(`${SUPABASE_URL}/rest/v1/player_stats`, {
+            method: "POST",
+            headers: headerFactory({ Prefer: "return=representation" }),
+            body: JSON.stringify(newStats)
         });
     }
+}
+
+const updateUserStats = async (stats) => {
+    return await incrementUserStats(stats);
 }
 
 // UN SOLO EXPORT AL FINAL

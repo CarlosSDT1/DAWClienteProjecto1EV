@@ -1,3 +1,4 @@
+import { getSession, saveGameState, updateUserStats } from "../services/supaservice.js";
 export function iniciarJuego() {
     const app = document.getElementById('app');
     
@@ -332,80 +333,192 @@ export function iniciarJuego() {
     }
 
     function actualizarInfoCarrera() {
-        const terminados = estado.jugadoresTerminados;
-        const totalJugadores = Object.keys(estado.jugadores).length;
-        
-        if (terminados > 0) {
-            infoCarreraElement.textContent = `🏁 ${terminados}/${totalJugadores} jugadores han terminado`;
-            infoCarreraElement.className = 'small text-success fw-bold';
-        } else {
-            infoCarreraElement.textContent = '';
-            infoCarreraElement.className = 'small text-muted';
+    const terminados = estado.jugadoresTerminados;
+    const totalJugadores = Object.keys(estado.jugadores).length;
+    
+    if (terminados > 0) {
+        const ganador = Object.values(estado.jugadores).find(j => j.posicionFinal === 1);
+        if (ganador) {
+            infoCarreraElement.innerHTML = `
+                <div class="alert alert-success py-2 mb-0">
+                    <span class="fw-bold">🏆 ¡${ganador.nombre} ganó la partida!</span>
+                    <button class="btn btn-sm btn-outline-light ms-2" onclick="document.getElementById('tabla-posiciones').scrollIntoView()">
+                        Ver resultados
+                    </button>
+                </div>
+            `;
         }
+    } else {
+        infoCarreraElement.textContent = '🏁 ¡Sé el primero en llegar a la casilla 63 para ganar!';
+        infoCarreraElement.className = 'small text-muted';
     }
+}
 
     function tirarDado() {
-        if (!estado.juegoActivo || estado.dadoTirado) return;
-
-        const jugador = estado.jugadores[estado.jugadorActual];
-        if (jugador.terminado) return;
-
-        // Resetear estados al inicio del turno
-        estado.mantenerTurno = false;
-        
-        const numDados = jugador.dadosAcumulados;
-        jugador.turnos++;
-        
-        let totalDado = 0;
-        const resultados = [];
-        
-        for (let i = 0; i < numDados; i++) {
-            const dado = Math.floor(Math.random() * 6) + 1;
-            resultados.push(dado);
-            totalDado += dado;
-        }
-        
-        estado.valorDado = totalDado;
-        estado.dadoTirado = true;
-        
-        if (numDados === 1) {
-            dadoResultadoElement.textContent = `🎲 ${jugador.nombre} ha sacado un ${estado.valorDado}`;
-        } else {
-            dadoResultadoElement.textContent = `🎲 ${jugador.nombre} ha sacado ${resultados.join(' + ')} = ${estado.valorDado}`;
-        }
-        
-        mensajeEspecialElement.textContent = `Avanzando ${estado.valorDado} casillas...`;
-        mensajeEspecialElement.className = 'h6 text-primary';
-        
-        jugador.dadosAcumulados = 1;
-        
-        setTimeout(moverJugador, 1500);
+    // Verificar si el juego ha terminado
+    if (!estado.juegoActivo) {
+        mensajeEspecialElement.textContent = "❌ El juego ha terminado. Haz clic en 'Nuevo Juego' para jugar otra vez.";
+        mensajeEspecialElement.className = 'h6 text-danger';
+        return;
     }
+    
+    if (estado.dadoTirado) return;
+
+    const jugador = estado.jugadores[estado.jugadorActual];
+    
+    // Verificar si el jugador está terminado
+    if (jugador.terminado) {
+        mensajeEspecialElement.textContent = `⚠️ ${jugador.nombre} ya terminó el juego.`;
+        mensajeEspecialElement.className = 'h6 text-warning';
+        return;
+    }
+    
+    // Verificar si el jugador está inactivo (en pozo/cárcel)
+    if (estado.jugadoresInactivos.has(estado.jugadorActual)) {
+        mensajeEspecialElement.textContent = `⏸️ ${jugador.nombre} está inactivo (en pozo/cárcel).`;
+        mensajeEspecialElement.className = 'h6 text-secondary';
+        siguienteTurno();
+        return;
+    }
+
+    // Resetear estados al inicio del turno
+    estado.mantenerTurno = false;
+    
+    const numDados = jugador.dadosAcumulados;
+    jugador.turnos++;
+    
+    let totalDado = 0;
+    const resultados = [];
+    
+    // Tirar los dados
+    for (let i = 0; i < numDados; i++) {
+        const dado = Math.floor(Math.random() * 6) + 1;
+        resultados.push(dado);
+        totalDado += dado;
+    }
+    
+    estado.valorDado = totalDado;
+    estado.dadoTirado = true;
+    
+    // Mostrar resultado de los dados
+    if (numDados === 1) {
+        dadoResultadoElement.textContent = `🎲 ${jugador.nombre} ha sacado un ${estado.valorDado}`;
+        dadoResultadoElement.className = 'h5 text-primary fw-bold';
+    } else {
+        dadoResultadoElement.textContent = `🎲 ${jugador.nombre} ha sacado ${resultados.join(' + ')} = ${estado.valorDado}`;
+        dadoResultadoElement.className = 'h5 text-primary fw-bold';
+    }
+    
+    mensajeEspecialElement.textContent = `Avanzando ${estado.valorDado} casillas...`;
+    mensajeEspecialElement.className = 'h6 text-primary';
+    
+    // Resetear dados acumulados
+    jugador.dadosAcumulados = 1;
+    
+    // Actualizar información del jugador
+    document.getElementById(`dados-jugador${estado.jugadorActual}`).textContent = jugador.dadosAcumulados;
+    
+    // Deshabilitar botones durante el movimiento
+    tirarDadoBtn.disabled = true;
+    pasarTurnoBtn.disabled = true;
+    
+    // Mover al jugador después de un breve delay
+    setTimeout(moverJugador, 1500);
+}
 
     function pasarTurno() {
-        if (!estado.juegoActivo || estado.dadoTirado) return;
-
-        const jugador = estado.jugadores[estado.jugadorActual];
-        if (jugador.terminado) return;
-
-        jugador.turnos++;
-        
-        if (jugador.dadosAcumulados < 3) {
-            jugador.dadosAcumulados++;
-            
-            dadoResultadoElement.textContent = `⏭️ ${jugador.nombre} pasa el turno`;
-            mensajeEspecialElement.textContent = `¡Estrategia! Próximo turno tirarás ${jugador.dadosAcumulados} dados`;
-            mensajeEspecialElement.className = 'h6 text-info';
-            
-            setTimeout(() => {
-                estado.dadoTirado = false;
-                siguienteTurno();
-            }, 2000);
-        } else {
-            mensajeEspecialElement.textContent = "¡Ya tienes el máximo de dados acumulados (3)! Tira el dado.";
-            mensajeEspecialElement.className = 'h6 text-warning';
-        }
+    // Verificar si el juego ha terminado
+    if (!estado.juegoActivo) {
+        mensajeEspecialElement.textContent = "❌ El juego ha terminado. Haz clic en 'Nuevo Juego' para jugar otra vez.";
+        mensajeEspecialElement.className = 'h6 text-danger';
+        return;
     }
+    
+    if (estado.dadoTirado) return;
+
+    const jugador = estado.jugadores[estado.jugadorActual];
+    
+    // Verificar si el jugador está terminado
+    if (jugador.terminado) {
+        mensajeEspecialElement.textContent = `⚠️ ${jugador.nombre} ya terminó el juego.`;
+        mensajeEspecialElement.className = 'h6 text-warning';
+        siguienteTurno();
+        return;
+    }
+    
+    // Verificar si el jugador está inactivo (en pozo/cárcel)
+    if (estado.jugadoresInactivos.has(estado.jugadorActual)) {
+        mensajeEspecialElement.textContent = `⏸️ ${jugador.nombre} está inactivo (en pozo/cárcel). Pierde este turno.`;
+        mensajeEspecialElement.className = 'h6 text-secondary';
+        
+        jugador.turnos++;
+        jugador.dadosAcumulados = 1;
+        document.getElementById(`dados-jugador${estado.jugadorActual}`).textContent = 1;
+        
+        // Si está en la cárcel, verificar si ya cumplió los 2 turnos
+        if (jugador.posicion === 52) { // Casilla de cárcel
+            // Verificar cuántos turnos lleva inactivo
+            let turnosInactivo = 0;
+            for (let i = 1; i <= 4; i++) {
+                if (estado.jugadoresInactivos.has(i) && estado.jugadores[i].posicion === 52) {
+                    turnosInactivo++;
+                }
+            }
+            
+            if (turnosInactivo >= 2) {
+                estado.jugadoresInactivos.delete(estado.jugadorActual);
+                mensajeEspecialElement.textContent = `✅ ${jugador.nombre} ha cumplido su condena en la cárcel y está libre.`;
+            }
+        }
+        
+        setTimeout(() => {
+            estado.dadoTirado = false;
+            siguienteTurno();
+        }, 2000);
+        return;
+    }
+
+    jugador.turnos++;
+    
+    // Acumular dados (máximo 3)
+    if (jugador.dadosAcumulados < 3) {
+        jugador.dadosAcumulados++;
+        
+        dadoResultadoElement.textContent = `⏭️ ${jugador.nombre} pasa el turno`;
+        dadoResultadoElement.className = 'h5 text-info';
+        
+        mensajeEspecialElement.textContent = `¡Estrategia! Próximo turno tirarás ${jugador.dadosAcumulados} dados`;
+        mensajeEspecialElement.className = 'h6 text-info fw-bold';
+        
+        // Actualizar información del jugador
+        document.getElementById(`dados-jugador${estado.jugadorActual}`).textContent = jugador.dadosAcumulados;
+        
+        // Deshabilitar botones temporalmente
+        tirarDadoBtn.disabled = true;
+        pasarTurnoBtn.disabled = true;
+        
+        setTimeout(() => {
+            estado.dadoTirado = false;
+            siguienteTurno();
+            tirarDadoBtn.disabled = false;
+            pasarTurnoBtn.disabled = false;
+        }, 2000);
+    } else {
+        // Ya tiene el máximo de dados acumulados
+        dadoResultadoElement.textContent = `🎲 ${jugador.nombre} ya tiene el máximo de dados (3)`;
+        dadoResultadoElement.className = 'h5 text-warning';
+        
+        mensajeEspecialElement.textContent = "¡Ya tienes el máximo de dados acumulados (3)! Tira el dado para jugar.";
+        mensajeEspecialElement.className = 'h6 text-warning';
+        
+        // Forzar a tirar el dado
+        setTimeout(() => {
+            dadoResultadoElement.textContent = "";
+            mensajeEspecialElement.textContent = "¡Es tu turno! Tira el dado.";
+            mensajeEspecialElement.className = 'h6 text-success';
+        }, 3000);
+    }
+}
 
     function moverJugador() {
         const jugador = estado.jugadores[estado.jugadorActual];
@@ -543,21 +656,35 @@ export function iniciarJuego() {
         }
     }
 
-    function procesarDespuesDeMovimiento(jugador) {
-        // Verificar si llegó a la meta
-        if (jugador.posicion === 63 && !jugador.terminado) {
-            jugador.terminado = true;
-            jugador.posicionFinal = estado.jugadoresTerminados + 1;
-            estado.jugadoresTerminados++;
-            mensajeEspecialElement.textContent = `🎉 ¡${jugador.nombre} ha llegado a la meta en ${jugador.posicionFinal}° lugar!`;
-            mensajeEspecialElement.className = 'h6 text-success fw-bold';
-            
-            if (estado.jugadoresTerminados === Object.keys(estado.jugadores).length) {
-                finalizarJuego();
-                return;
-            }
-        }
+   function procesarDespuesDeMovimiento(jugador) {
+    // Verificar si llegó a la meta
+    if (jugador.posicion === 63 && !jugador.terminado) {
+        jugador.terminado = true;
+        jugador.posicionFinal = 1; // Temporalmente, luego se recalcula
         
+        mensajeEspecialElement.textContent = `🎉 ¡${jugador.nombre} ha llegado a la meta!`;
+        mensajeEspecialElement.className = 'h6 text-success fw-bold';
+        
+        // MODIFICACIÓN: Terminar el juego inmediatamente cuando CUALQUIER jugador llegue a la meta
+        // Calcular posiciones finales de todos los jugadores
+        calcularPosicionesFinales();
+        
+        // Mostrar mensaje de victoria
+        const ganador = Object.values(estado.jugadores).find(j => j.posicionFinal === 1);
+        infoTurnoElement.innerHTML = `
+            <div class="alert alert-success text-center">
+                <h3 class="mb-3">🏆 ¡${ganador.nombre} ha ganado la partida! 🏆</h3>
+                <p class="mb-0">${ganador.nombre} llegó a la meta en ${ganador.turnos} turnos.</p>
+            </div>
+        `;
+        
+        // Terminar el juego inmediatamente
+        finalizarJuego();
+        return;
+    }
+    
+    // Si el juego sigue activo, continuar normal
+    if (estado.juegoActivo) {
         // Verificar casilla especial
         verificarCasillaEspecial(jugador);
         
@@ -566,31 +693,41 @@ export function iniciarJuego() {
         if (!estado.mantenerTurno) {
             estado.dadoTirado = false;
             dibujarTablero();
+            
+            // Rehabilitar botones
+            tirarDadoBtn.disabled = false;
+            pasarTurnoBtn.disabled = false;
+            
             setTimeout(siguienteTurno, 1500);
         }
-        // Si estado.mantenerTurno es true, la función verificarCasillaEspecial
-        // ya se encargó de preparar el siguiente turno
     }
+}
 
     function siguienteTurno() {
-        let siguienteJugador = estado.jugadorActual;
-        let intentos = 0;
-        
-        do {
-            siguienteJugador = siguienteJugador % 4 + 1;
-            intentos++;
-            
-            if (intentos > 4) {
-                estado.jugadoresInactivos.clear();
-                break;
-            }
-        } while (estado.jugadoresInactivos.has(siguienteJugador) || 
-                 estado.jugadores[siguienteJugador].terminado);
-        
-        estado.jugadorActual = siguienteJugador;
-        actualizarInfoTurno();
-        dibujarTablero();
+    // Si el juego terminó, no cambiar turno
+    if (!estado.juegoActivo) {
+        return;
     }
+    
+    let siguienteJugador = estado.jugadorActual;
+    let intentos = 0;
+    
+    do {
+        siguienteJugador = siguienteJugador % 4 + 1;
+        intentos++;
+        
+        // Si todos están terminados, algo anda mal
+        if (intentos > 8) {
+            console.warn("No se encontró jugador disponible");
+            break;
+        }
+    } while (estado.jugadores[siguienteJugador].terminado || 
+             estado.jugadoresInactivos.has(siguienteJugador));
+    
+    estado.jugadorActual = siguienteJugador;
+    actualizarInfoTurno();
+    dibujarTablero();
+}
 
     function verificarCasillaEspecial(jugador) {
         const casilla = estado.tablero[jugador.posicion];
@@ -709,55 +846,88 @@ export function iniciarJuego() {
     }
 
     function finalizarJuego() {
-        estado.juegoActivo = false;
-        mostrarTablaPosiciones();
-        tirarDadoBtn.disabled = true;
-        pasarTurnoBtn.disabled = true;
-        infoTurnoElement.innerHTML = `<div class="alert alert-success h3">🎉 ¡Carrera Terminada! 🎉</div>`;
-    }
+    estado.juegoActivo = false;
+    
+    // Deshabilitar todos los botones
+    tirarDadoBtn.disabled = true;
+    pasarTurnoBtn.disabled = true;
+    pasarTurnoBtn.style.display = 'none'; // Ocultar botón pasar turno
+    tirarDadoBtn.style.display = 'none'; // Ocultar botón tirar dado
+    
+    // Mostrar solo el botón de reiniciar
+    reiniciarBtn.focus();
+    
+    // Actualizar el tablero una última vez
+    dibujarTablero();
+    
+    // Mostrar tabla de posiciones definitiva
+    mostrarTablaPosiciones();
+    
+    // Guardar estadísticas del juego
+    guardarEstadisticasJuego();
+}
 
     function mostrarTablaPosiciones() {
-        const jugadoresOrdenados = Object.values(estado.jugadores)
-            .sort((a, b) => a.posicionFinal - b.posicionFinal);
+    // Ordenar jugadores por posición final
+    const jugadoresOrdenados = Object.values(estado.jugadores)
+        .sort((a, b) => a.posicionFinal - b.posicionFinal);
+    
+    cuerpoTablaElement.innerHTML = '';
+    
+    jugadoresOrdenados.forEach((jugador) => {
+        const fila = document.createElement('tr');
+        let posicionTexto = '';
+        let claseFila = '';
+        let estadoJugador = '';
         
-        cuerpoTablaElement.innerHTML = '';
+        switch (jugador.posicionFinal) {
+            case 1:
+                posicionTexto = '🥇 1°';
+                claseFila = 'table-success fw-bold';
+                estadoJugador = '<span class="text-success">🏆 Ganador</span>';
+                break;
+            case 2:
+                posicionTexto = '🥈 2°';
+                claseFila = 'table-info';
+                estadoJugador = '<span class="text-info">Finalista</span>';
+                break;
+            case 3:
+                posicionTexto = '🥉 3°';
+                claseFila = 'table-warning';
+                estadoJugador = '<span class="text-warning">Tercer lugar</span>';
+                break;
+            default:
+                posicionTexto = `${jugador.posicionFinal}°`;
+                claseFila = '';
+                estadoJugador = '<span class="text-secondary">Participante</span>';
+        }
         
-        jugadoresOrdenados.forEach((jugador, index) => {
-            const fila = document.createElement('tr');
-            let posicionTexto = '';
-            let claseFila = '';
-            
-            switch (index) {
-                case 0:
-                    posicionTexto = '1°';
-                    claseFila = 'table-success';
-                    break;
-                case 1:
-                    posicionTexto = '2°';
-                    claseFila = 'table-info';
-                    break;
-                case 2:
-                    posicionTexto = '3°';
-                    claseFila = 'table-warning';
-                    break;
-                default:
-                    posicionTexto = `${index + 1}°`;
-                    claseFila = '';
-            }
-            
-            fila.className = claseFila;
-            fila.innerHTML = `
-                <td class="fw-bold">${posicionTexto}</td>
-                <td><span class="badge bg-${jugador.color}">${jugador.nombre}</span></td>
-                <td>${jugador.turnos}</td>
-                <td>${jugador.terminado ? '<span class="text-success">✅ Terminado</span>' : '<span class="text-danger">❌ No terminó</span>'}</td>
-            `;
-            
-            cuerpoTablaElement.appendChild(fila);
-        });
+        // Añadir info adicional
+        let infoExtra = '';
+        if (jugador.posicion === 63) {
+            infoExtra = `<br><small class="text-success">Llegó a la meta</small>`;
+        } else {
+            infoExtra = `<br><small class="text-muted">Casilla ${jugador.posicion}</small>`;
+        }
         
-        tablaPosicionesElement.style.display = 'block';
-    }
+        fila.className = claseFila;
+        fila.innerHTML = `
+            <td class="fw-bold">${posicionTexto}</td>
+            <td>
+                <span class="badge bg-${jugador.color}">${jugador.nombre}</span>
+                ${infoExtra}
+            </td>
+            <td>${jugador.turnos}</td>
+            <td>${estadoJugador}</td>
+        `;
+        
+        cuerpoTablaElement.appendChild(fila);
+    });
+    
+    // Mostrar tabla y cambiar título
+    tablaPosicionesElement.style.display = 'block';
+    tablaPosicionesElement.querySelector('h3').textContent = '🏆 Resultados Finales de la Partida 🏆';
+}
 
     function actualizarPosiciones() {
         Object.keys(estado.jugadores).forEach(jugadorId => {
@@ -785,32 +955,199 @@ export function iniciarJuego() {
             }
         });
     }
-
-    function reiniciarJuego() {
-        estado.jugadorActual = 1;
-        estado.jugadoresTerminados = 0;
-        estado.turnoActual = 1;
-        estado.dadoTirado = false;
-        estado.valorDado = 0;
-        estado.juegoActivo = true;
-        estado.mantenerTurno = false;
-        estado.jugadoresInactivos.clear();
-
-        Object.keys(estado.jugadores).forEach(jugadorId => {
-            estado.jugadores[jugadorId].posicion = 0;
-            estado.jugadores[jugadorId].dadosAcumulados = 1;
-            estado.jugadores[jugadorId].pasoUltimoTurno = false;
-            estado.jugadores[jugadorId].terminado = false;
-            estado.jugadores[jugadorId].posicionFinal = 0;
-            estado.jugadores[jugadorId].turnos = 0;
-        });
-
-        tirarDadoBtn.disabled = false;
-        pasarTurnoBtn.disabled = false;
-        tablaPosicionesElement.style.display = 'none';
-        
-        dibujarTablero();
+    
+    function guardarEstadisticasJuego() {
+    const userId = getSession();
+    const isGuest = localStorage.getItem('guestMode') === 'true';
+    
+    if (!userId && !isGuest) {
+        console.log("No se guardan estadísticas: usuario no autenticado");
+        return;
     }
+    
+    // Determinar quién ganó (jugador con posicionFinal = 1)
+    const ganador = Object.values(estado.jugadores).find(j => j.posicionFinal === 1);
+    const totalTurnos = Object.values(estado.jugadores).reduce((sum, j) => sum + j.turnos, 0);
+    
+    // 🎯 LÓGICA CORREGIDA:
+    // 1. ¿Ganó el Jugador 1?
+    const jugador1 = estado.jugadores[1];
+    const ganoJugador1 = ganador && ganador.nombre === jugador1.nombre;
+    
+    // 2. Preparar estadísticas
+    const statsUpdate = {
+        games_played: 1,           // ✅ SIEMPRE suma 1 partida jugada
+        games_won: ganoJugador1 ? 1 : 0,  // ✅ Solo suma si ganó Jugador 1
+        total_turns: totalTurnos,
+        last_played: new Date().toISOString()
+    };
+    
+    console.log("📊 Estadísticas a guardar:", {
+        partidasJugadas: "+1",
+        partidasGanadas: ganoJugador1 ? "+1 (Jugador 1 ganó)" : "+0",
+        totalTurnos: totalTurnos,
+        ganador: ganador?.nombre || "Ninguno"
+    });
+    
+    // Preparar datos del juego terminado
+    const gameData = {
+        game_state: {
+            jugadores: estado.jugadores,
+            ganador: ganador?.nombre || 'Desconocido',
+            jugadorActual: estado.jugadorActual,
+            juegoActivo: false,  // Importante: false
+            jugadoresTerminados: estado.jugadoresTerminados,
+            turnoActual: estado.turnoActual,
+            fecha: new Date().toISOString(),
+            totalTurnos: totalTurnos
+        },
+        finished: true,  // ✅ Asegurar que sea TRUE
+        finished_at: new Date().toISOString()
+    };
+    
+    if (userId) {
+        // Primero guardar el juego
+        saveGameState(gameData).then(result => {
+            console.log("✅ Juego guardado en Supabase");
+            
+            // Luego actualizar estadísticas
+            updateUserStats(statsUpdate).then(result => {
+                console.log("✅ Estadísticas actualizadas:", statsUpdate);
+            }).catch(error => {
+                console.error("❌ Error al actualizar estadísticas:", error);
+            });
+            
+        }).catch(error => {
+            console.error("❌ Error al guardar juego:", error);
+            
+            // Intentar guardar localmente como respaldo
+            if (isGuest || !userId) {
+                const localGames = JSON.parse(localStorage.getItem('oca_games') || '[]');
+                localGames.push({
+                    ...gameData,
+                    local_id: Date.now(),
+                    stats: statsUpdate  // Guardar stats también localmente
+                });
+                localStorage.setItem('oca_games', JSON.stringify(localGames.slice(-10)));
+                console.log("📁 Juego guardado localmente");
+            }
+        });
+    } else if (isGuest) {
+        // Guardar localmente en modo invitado
+        const localGames = JSON.parse(localStorage.getItem('oca_games') || '[]');
+        localGames.push({
+            ...gameData,
+            local_id: Date.now(),
+            stats: statsUpdate
+        });
+        localStorage.setItem('oca_games', JSON.stringify(localGames.slice(-10)));
+        console.log("📁 Juego guardado localmente (invitado)");
+    }
+}
+
+function actualizarEstadisticasJugador(userId) {
+    // Calcular estadísticas
+    const jugadoresOrdenados = Object.values(estado.jugadores)
+        .sort((a, b) => a.posicionFinal - b.posicionFinal);
+    
+    // El ganador es el que tiene posicionFinal = 1
+    const ganador = jugadoresOrdenados.find(j => j.posicionFinal === 1);
+    const jugadorActual = estado.jugadores[estado.jugadorActual];
+    
+    // Suponiendo que el jugador actual es el usuario (esto dependerá de tu lógica)
+    const esGanador = ganador && ganador.nombre === jugadorActual.nombre;
+    const totalTurnos = Object.values(estado.jugadores).reduce((sum, j) => sum + j.turnos, 0);
+    
+    // Preparar datos para actualizar
+    const statsUpdate = {
+        games_played: 1,
+        games_won: esGanador ? 1 : 0,
+        total_turns: totalTurnos,
+        last_played: new Date().toISOString()
+    };
+    
+    // Actualizar estadísticas
+    updateUserStats(statsUpdate).then(result => {
+        console.log("Estadísticas actualizadas:", result);
+    }).catch(error => {
+        console.error("Error al actualizar estadísticas:", error);
+    });
+}
+function calcularPosicionesFinales() {
+    // Ordenar jugadores por posición descendente (el más cerca de la meta primero)
+    const jugadoresOrdenados = Object.values(estado.jugadores)
+        .sort((a, b) => {
+            // Primero, los que ya llegaron a la meta (posición 63)
+            if (a.posicion === 63 && b.posicion !== 63) return -1;
+            if (b.posicion === 63 && a.posicion !== 63) return 1;
+            
+            // Luego por posición (más alta primero)
+            if (b.posicion !== a.posicion) {
+                return b.posicion - a.posicion;
+            } else {
+                // Si tienen la misma posición, el que tiene menos turnos va primero
+                return a.turnos - b.turnos;
+            }
+        });
+    
+    // REASIGNAR TODAS las posiciones finales desde 1
+    jugadoresOrdenados.forEach((jugador, index) => {
+        jugador.posicionFinal = index + 1;
+        jugador.terminado = true; // Marcar a todos como terminados
+    });
+    
+    // Actualizar contador de jugadores terminados
+    estado.jugadoresTerminados = Object.keys(estado.jugadores).length;
+}
+    function reiniciarJuego() {
+    // Resetear estado del juego
+    estado.jugadorActual = 1;
+    estado.jugadoresTerminados = 0;
+    estado.turnoActual = 1;
+    estado.dadoTirado = false;
+    estado.valorDado = 0;
+    estado.juegoActivo = true;
+    estado.mantenerTurno = false;
+    estado.jugadoresInactivos.clear();
+    
+    // Resetear cada jugador
+    Object.keys(estado.jugadores).forEach(jugadorId => {
+        estado.jugadores[jugadorId].posicion = 0;
+        estado.jugadores[jugadorId].dadosAcumulados = 1;
+        estado.jugadores[jugadorId].pasoUltimoTurno = false;
+        estado.jugadores[jugadorId].terminado = false;
+        estado.jugadores[jugadorId].posicionFinal = 0;
+        estado.jugadores[jugadorId].turnos = 0;
+    });
+    
+    // Restaurar botones
+    tirarDadoBtn.disabled = false;
+    pasarTurnoBtn.disabled = false;
+    tirarDadoBtn.style.display = 'inline-block';
+    pasarTurnoBtn.style.display = 'inline-block';
+    
+    // Ocultar tabla de posiciones
+    tablaPosicionesElement.style.display = 'none';
+    
+    // Restaurar mensajes
+    infoTurnoElement.innerHTML = `
+        <span class="badge bg-primary fs-5 p-3">
+            Turno actual: <span id="jugador-actual">Jugador 1</span>
+            <span id="info-dados-turno" class="ms-2"></span>
+        </span>
+    `;
+    
+    dadoResultadoElement.textContent = '';
+    mensajeEspecialElement.textContent = '¡Nuevo juego comenzado! Es tu turno, Jugador 1.';
+    mensajeEspecialElement.className = 'h6 text-success';
+    
+    // Redibujar tablero
+    dibujarTablero();
+    
+    // Actualizar referencias a elementos después de reiniciar
+    jugadorActualElement = document.getElementById('jugador-actual');
+    infoDadosTurnoElement = document.getElementById('info-dados-turno');
+}
 
     // Event listeners
     tirarDadoBtn.addEventListener('click', tirarDado);

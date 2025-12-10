@@ -1,7 +1,7 @@
 // components/stats.js
-import { getUserStats, getGames } from "../services/supaservice.js";
+import { getUserStats, getGames, getSession } from "../services/supaservice.js";
 
-export { renderStats };
+export { renderStats, GameStats };
 
 function renderStats() {
     const div = document.createElement("div");
@@ -60,7 +60,7 @@ function renderStats() {
                                             ${userGames.slice(0, 5).map(game => `
                                                 <li class="list-group-item">
                                                     Partida ${new Date(game.created_at).toLocaleDateString()}
-                                                    ${game.finished ? '✅ Completada' : '⏸️ En pausa'}
+                                                    ✅ Finalizada
                                                 </li>
                                             `).join('')}
                                         </ul>` : 
@@ -109,4 +109,7 @@ class GameStats extends HTMLElement {
     }
 }
 
-customElements.define('game-stats', GameStats);
+// Registrar el componente automáticamente si no está definido
+if (!customElements.get('game-stats')) {
+    customElements.define('game-stats', GameStats);
+}
