@@ -7,7 +7,12 @@
     "dev": "vite --port 5173",
     "prebuild": "rm -rf node_modules && npm install",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
@@ -15,6 +20,8 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.15",
+    "jsdom": "^27.3.0",
     "sass": "^1.93.2",
     "vite": "^7.1.7",
     "vitest": "^4.0.15"
