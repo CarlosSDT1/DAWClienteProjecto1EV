@@ -1,8 +1,13 @@
-// game/juego.js - COMPLETO Y FUNCIONAL CON RXJS
+// game/juego.js - COMPLETO CON IMPORTS CORREGIDOS
 import { createInitialState, guardarEstado, limpiarEstadoGuardado, hayPartidaEnCurso } from './state/gameState.js';
 import { siguienteTurno, actualizarPosiciones, actualizarEstadosJugadores } from './players/playerManager.js';
 import { tirarDado, formatearResultadoDado } from './dice/diceManager.js';
-import { procesarCasillaEspecial, liberarDelPozo } from './specialCells/specialCells.js';
+import { 
+    procesarCasillaEspecial, 
+    liberarDelPozo,
+    procesarInactividades,
+    verificarLiberacionesDelPozo 
+} from './specialCells/specialCells.js';
 import { animarMovimiento } from './animations/animationManager.js';
 import { actualizarInfoTurno, mostrarMensaje, mostrarResultadoDado, actualizarInfoCarrera } from './ui/gameUI.js';
 import { calcularPosicionesFinales, mostrarTablaPosiciones, guardarEstadisticasJuego } from './stats/gameStats.js';
@@ -10,13 +15,13 @@ import { dibujarTableroCompleto } from './ui/boardRenderer.js';
 
 // Importaciones rxjs
 import { 
-  gameState$, 
-  currentPlayer$, 
-  gameEvents$, 
-  emitGameEvent,
-  initGameObservables,
-  userInteractions$,
-  getGameStats$
+    gameState$, 
+    currentPlayer$, 
+    gameEvents$, 
+    emitGameEvent,
+    initGameObservables,
+    userInteractions$,
+    getGameStats$
 } from '../services/gameObservables.js';
 
 import { fromEvent } from 'rxjs';
@@ -97,6 +102,7 @@ function renderizarInterfaz() {
                 <div id="dado-resultado" class="h5 text-warning mb-2"></div>
                 <div id="mensaje-especial" class="h6 text-info"></div>
                 <div id="info-carrera" class="small text-muted mt-2"></div>
+                <div id="rxjs-status" class="small text-success mt-1">🟢 rxjs activo</div>
             </div>
 
             <div class="row justify-content-center">
@@ -336,8 +342,8 @@ function configurarSuscripcionesReactivas() {
 
 function actualizarInfoTurnoReactivo(estado) {
     if (!estado || !estado.jugadores || !estado.jugadorActual) return;
-    
-    const { jugadorActual, jugadores } = estado; // Object destructuring - para acceder fácilmente a propiedades del estado
+    // Object destructuring - para acceder facilmente a las propiedades del estado
+    const { jugadorActual, jugadores } = estado; // Object destructuring
     const jugador = jugadores[jugadorActual];
     
     const jugadorActualElement = document.getElementById('jugador-actual');
@@ -380,12 +386,38 @@ function manejarTirarDadoReactivo() {
     
     const jugador = estado.jugadores[estado.jugadorActual];
     
-    if (jugador.terminado || estado.jugadoresInactivos.has(estado.jugadorActual)) {
-        mostrarMensaje(`⚠️ ${jugador.nombre} no puede jugar ahora`, 'warning');
+    // VERIFICAR INACTIVIDAD - CORREGIDO
+    if (estado.jugadoresInactivos.has(estado.jugadorActual)) {
+        // Procesar inactividad (reduce contadores)
+        const sigueInactivo = procesarInactividades(estado, estado.jugadorActual);
+        
+        if (sigueInactivo) {
+            // Si sigue inactivo, pierde el turno
+            mostrarMensaje(`⏸️ ${jugador.nombre} está inactivo (${jugador.tipoInactividad}), pierde el turno`, 'warning');
+            jugador.turnos++; // Contar como turno
+            
+            setTimeout(() => {
+                estado.dadoTirado = false;
+                siguienteTurno(estado);
+                emitGameEvent('TURN_SKIP', { 
+                    playerId: estado.jugadorActual, 
+                    reason: 'inactive' 
+                });
+                gameState$.next(estado);
+            }, 2000);
+            return;
+        } else {
+            // Si ya no está inactivo, puede jugar
+            mostrarMensaje(`✅ ${jugador.nombre} ha terminado su inactividad, puede jugar`, 'success');
+        }
+    }
+    
+    if (jugador.terminado) {
+        mostrarMensaje(`⚠️ ${jugador.nombre} ya terminó el juego`, 'warning');
         siguienteTurno(estado);
         emitGameEvent('TURN_SKIP', { 
             playerId: estado.jugadorActual, 
-            reason: jugador.terminado ? 'finished' : 'inactive' 
+            reason: 'finished' 
         });
         gameState$.next(estado);
         return;
@@ -429,34 +461,37 @@ function manejarPasarTurnoReactivo() {
     
     const jugador = estado.jugadores[estado.jugadorActual];
     
+    // VERIFICAR INACTIVIDAD - CORREGIDO (misma lógica)
+    if (estado.jugadoresInactivos.has(estado.jugadorActual)) {
+        // Procesar inactividad (reduce contadores)
+        const sigueInactivo = procesarInactividades(estado, estado.jugadorActual);
+        
+        if (sigueInactivo) {
+            // Si sigue inactivo, pierde el turno
+            mostrarMensaje(`⏸️ ${jugador.nombre} está inactivo (${jugador.tipoInactividad}), pierde el turno`, 'warning');
+            jugador.turnos++; // Contar como turno
+            
+            setTimeout(() => {
+                estado.dadoTirado = false;
+                siguienteTurno(estado);
+                emitGameEvent('TURN_SKIP', { 
+                    playerId: estado.jugadorActual, 
+                    reason: 'inactive' 
+                });
+                gameState$.next(estado);
+            }, 2000);
+            return;
+        } else {
+            // Si ya no está inactivo, puede jugar
+            mostrarMensaje(`✅ ${jugador.nombre} ha terminado su inactividad, puede jugar`, 'success');
+        }
+    }
+    
     if (jugador.terminado) {
         mostrarMensaje(`⚠️ ${jugador.nombre} ya terminó el juego`, 'warning');
         siguienteTurno(estado);
         emitGameEvent('TURN_SKIP', { playerId: estado.jugadorActual, reason: 'finished' });
         gameState$.next(estado);
-        return;
-    }
-    
-    if (estado.jugadoresInactivos.has(estado.jugadorActual)) {
-        mostrarMensaje(`⏸️ ${jugador.nombre} está inactivo (en pozo/cárcel).`, 'secondary');
-        jugador.turnos++;
-        jugador.dadosAcumulados = 1;
-        document.getElementById(`dados-jugador${estado.jugadorActual}`).textContent = 1;
-        
-        emitGameEvent('PLAYER_INACTIVE', { 
-            playerId: estado.jugadorActual, 
-            turnsInactive: 1 
-        });
-        
-        setTimeout(() => {
-            estado.dadoTirado = false;
-            siguienteTurno(estado);
-            emitGameEvent('TURN_CHANGE', { 
-                from: estado.jugadorActual, 
-                to: (estado.jugadorActual % 4) + 1 
-            });
-            gameState$.next(estado);
-        }, 2000);
         return;
     }
     
@@ -596,15 +631,11 @@ function procesarDespuesDeMovimientoReactivo(jugador) {
                 const mensajeExtra = resultadoCasillaEspecial.accion();
                 mostrarMensaje(mensajeExtra, 'warning');
                 
-                if (estado.jugadoresInactivos.size > 0) {
-                    const mensajeLiberacion = liberarDelPozo(estado);
-                    if (mensajeLiberacion) {
-                        mostrarMensaje(mensajeLiberacion, 'success');
-                        emitGameEvent('PLAYER_FREED', { 
-                            freedPlayer: Array.from(estado.jugadoresInactivos)[0] 
-                        });
-                    }
-                }
+                // Verificar liberaciones del pozo
+                const mensajesLiberacion = verificarLiberacionesDelPozo(estado);
+                mensajesLiberacion.forEach(mensaje => {
+                    mostrarMensaje(mensaje, 'success');
+                });
             }
             
             estado.mantenerTurno = resultadoCasillaEspecial.mantenerTurno || false;
