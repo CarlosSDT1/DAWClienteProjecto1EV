@@ -1,4 +1,4 @@
-// game/juego.js - COMPLETO AUTOMÁTICO
+// game/juego.js - COMPLETO Y FUNCIONAL CON RXJS
 import { createInitialState, guardarEstado, limpiarEstadoGuardado, hayPartidaEnCurso } from './state/gameState.js';
 import { siguienteTurno, actualizarPosiciones, actualizarEstadosJugadores } from './players/playerManager.js';
 import { tirarDado, formatearResultadoDado } from './dice/diceManager.js';
@@ -8,34 +8,71 @@ import { actualizarInfoTurno, mostrarMensaje, mostrarResultadoDado, actualizarIn
 import { calcularPosicionesFinales, mostrarTablaPosiciones, guardarEstadisticasJuego } from './stats/gameStats.js';
 import { dibujarTableroCompleto } from './ui/boardRenderer.js';
 
+// Importaciones rxjs
+import { 
+  gameState$, 
+  currentPlayer$, 
+  gameEvents$, 
+  emitGameEvent,
+  initGameObservables,
+  userInteractions$,
+  getGameStats$
+} from '../services/gameObservables.js';
+
+import { fromEvent } from 'rxjs';
+import { filter, tap, debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
+
 let estado;
+let cleanupObservables;
 
 export function iniciarJuego() {
-    console.log('Iniciando juego...');
+    console.log('🎮 Iniciando juego con rxjs...');
     
     // Cargar automáticamente si hay partida guardada
     if (hayPartidaEnCurso()) {
         console.log('🔍 Detectada partida guardada, cargando automáticamente...');
-        estado = createInitialState(); // Esto cargará el estado guardado automáticamente
+        estado = createInitialState();
         mostrarMensaje('✅ Partida anterior cargada automáticamente', 'success');
     } else {
         estado = createInitialState();
         mostrarMensaje('🆕 Nueva partida comenzada', 'info');
     }
     
-    renderizarInterfaz();
-    configurarEventListeners();
-    dibujarTableroCompleto(estado);
-    actualizarInfoTurno(estado);
+    // Inicializar observables y guardar función de limpieza
+    cleanupObservables = initGameObservables();
     
-    // Configurar guardado automático
-    configurarGuardadoAutomatico();
+    // Emitir estado inicial a los observables
+    gameState$.next(estado);
+    currentPlayer$.next(estado.jugadorActual);
+    
+    renderizarInterfaz();
+    configurarEventListenersReactivos();
+    dibujarTableroCompleto(estado);
+    actualizarInfoTurnoReactivo(estado);
+    
+    // Configurar suscripciones reactivas
+    configurarSuscripcionesReactivas();
     
     // Guardar estado inicial
     guardarEstado(estado);
     
-    // Mostrar indicador de partida cargada
-    setTimeout(() => mostrarMensaje('', 'info'), 3000);
+    // Suscribirse a cambios de estado para guardar automáticamente
+    const saveSubscription = gameState$.pipe(
+        filter(state => state !== null && state.juegoActivo),
+        debounceTime(1000)
+    ).subscribe(state => {
+        guardarEstado(state);
+    });
+    
+    // Añadir a la limpieza
+    const originalCleanup = cleanupObservables;
+    cleanupObservables = () => {
+        if (originalCleanup) originalCleanup();
+        if (saveSubscription) saveSubscription.unsubscribe();
+        console.log('🧹 Todas las suscripciones limpiadas');
+    };
+    
+    return cleanupObservables;
 }
 
 function renderizarInterfaz() {
@@ -48,7 +85,7 @@ function renderizarInterfaz() {
     
     app.innerHTML = `
         <div class="container mt-4">
-            <h1 class="text-center mb-4">Juego de la Oca</h1>
+            <h1 class="text-center mb-4">Juego de la Oca <small class="text-muted">(Reactivo)</small></h1>
             
             <div class="text-center mb-3">
                 <div id="info-turno" class="h4 mb-3">
@@ -69,15 +106,30 @@ function renderizarInterfaz() {
             </div>
 
             <div class="text-center mt-4">
-                <button id="tirar-dado" class="btn btn-success btn-lg me-2">Tirar Dado</button>
-                <button id="pasar-turno" class="btn btn-info btn-lg me-2">Pasar Turno</button>
+                <button id="tirar-dado" class="btn btn-success btn-lg me-2">🎲 Tirar Dado</button>
+                <button id="pasar-turno" class="btn btn-info btn-lg me-2">⏭️ Pasar Turno</button>
                 <button id="guardar-partida" class="btn btn-secondary btn-lg me-2" title="Guardar partida actual">
                     💾 Guardar
                 </button>
-                <button id="reiniciar" class="btn btn-primary btn-lg">Nueva Partida</button>
+                <button id="reiniciar" class="btn btn-primary btn-lg">🔄 Nueva Partida</button>
             </div>
 
             ${renderizarPanelesJugadores()}
+            
+            <!-- Estadísticas en tiempo real -->
+            <div id="estadisticas-tiempo-real" class="mt-4 card">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 Estadísticas en tiempo real</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="stats-content">
+                        <div class="col-md-3">Jugadores activos: <span id="stats-active">4</span></div>
+                        <div class="col-md-3">Turno actual: <span id="stats-turn">1</span></div>
+                        <div class="col-md-3">Tiradas totales: <span id="stats-rolls">0</span></div>
+                        <div class="col-md-3">Eventos: <span id="stats-events">0</span></div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Tabla de posiciones finales -->
             <div id="tabla-posiciones" class="mt-4" style="display: none;">
@@ -106,10 +158,11 @@ function renderizarPanelesJugadores() {
         <div class="row mt-4">
             ${[1, 2, 3, 4].map(id => `
                 <div class="col-md-3">
-                    <div class="player-info bg-${id === 1 ? 'primary' : id === 2 ? 'danger' : id === 3 ? 'success' : 'warning'} ${id === 1 ? 'text-white' : id === 4 ? 'text-dark' : 'text-white'} p-3 rounded">
+                    <div class="player-info player-panel-${id} bg-${id === 1 ? 'primary' : id === 2 ? 'danger' : id === 3 ? 'success' : 'warning'} ${id === 1 ? 'text-white' : id === 4 ? 'text-dark' : 'text-white'} p-3 rounded">
                         <h5>Jugador ${id}</h5>
                         <div>Posición: <span id="pos-jugador${id}">0</span></div>
                         <div>Dados: <span id="dados-jugador${id}">1</span></div>
+                        <div>Turnos: <span id="turnos-jugador${id}">0</span></div>
                         <div class="estado-jugador" id="estado-jugador${id}"></div>
                         <div class="ficha ficha-jugador${id} mt-2"></div>
                     </div>
@@ -119,56 +172,210 @@ function renderizarPanelesJugadores() {
     `;
 }
 
-function configurarEventListeners() {
-    document.getElementById('tirar-dado')?.addEventListener('click', manejarTirarDado);
-    document.getElementById('pasar-turno')?.addEventListener('click', manejarPasarTurno);
-    document.getElementById('reiniciar')?.addEventListener('click', reiniciarJuego);
-    document.getElementById('guardar-partida')?.addEventListener('click', manejarGuardarManual);
+function configurarEventListenersReactivos() {
+    // Configurar observables para botones usando rxjs
+    const tirarDadoBtn = document.getElementById('tirar-dado');
+    const pasarTurnoBtn = document.getElementById('pasar-turno');
+    const reiniciarBtn = document.getElementById('reiniciar');
+    const guardarBtn = document.getElementById('guardar-partida');
+    
+    if (tirarDadoBtn) {
+        fromEvent(tirarDadoBtn, 'click').pipe(
+            debounceTime(300)
+        ).subscribe(() => {
+            manejarTirarDadoReactivo();
+        });
+    }
+    
+    if (pasarTurnoBtn) {
+        fromEvent(pasarTurnoBtn, 'click').pipe(
+            debounceTime(300)
+        ).subscribe(() => {
+            manejarPasarTurnoReactivo();
+        });
+    }
+    
+    if (reiniciarBtn) {
+        fromEvent(reiniciarBtn, 'click').pipe(
+            debounceTime(300)
+        ).subscribe(() => {
+            reiniciarJuegoReactivo();
+        });
+    }
+    
+    if (guardarBtn) {
+        fromEvent(guardarBtn, 'click').pipe(
+            debounceTime(300)
+        ).subscribe(() => {
+            if (guardarEstado(estado)) {
+                mostrarMensaje('✅ Partida guardada', 'success');
+                emitGameEvent('GAME_SAVED', { timestamp: new Date().toISOString() });
+            }
+        });
+    }
+    
+    // Configurar teclas de acceso rápido
+    fromEvent(document, 'keydown').pipe(
+        filter(event => !event.repeat),
+        debounceTime(100)
+    ).subscribe(event => {
+        if (event.key === ' ' || event.key === 'Enter') {
+            if (!estado.dadoTirado && estado.juegoActivo) {
+                manejarTirarDadoReactivo();
+            }
+        } else if (event.key === 'p' || event.key === 'P') {
+            if (!estado.dadoTirado && estado.juegoActivo) {
+                manejarPasarTurnoReactivo();
+            }
+        } else if (event.key === 'r' || event.key === 'R') {
+            if (event.ctrlKey) {
+                reiniciarJuegoReactivo();
+            }
+        }
+    });
 }
 
-function manejarGuardarManual() {
-    if (guardarEstado(estado)) {
-        mostrarMensaje('✅ Partida guardada', 'success');
+function configurarSuscripcionesReactivas() {
+    let eventCount = 0;
+    let rollCount = 0;
+    
+    // Suscripción a eventos de juego para contarlos
+    gameEvents$.subscribe((event) => {
+        eventCount++;
+        const eventsElement = document.getElementById('stats-events');
+        if (eventsElement) {
+            eventsElement.textContent = eventCount;
+        }
+        
+        // Contar tiradas de dados
+        if (event.type === 'DICE_ROLL') {
+            rollCount++;
+            const rollsElement = document.getElementById('stats-rolls');
+            if (rollsElement) {
+                rollsElement.textContent = rollCount;
+            }
+        }
+    });
+    
+    // Suscripción a cambios de estado del juego
+    const stateSubscription = gameState$.pipe(
+        filter(state => state !== null),
+        distinctUntilChanged((prev, curr) => JSON.stringify(prev) === JSON.stringify(curr))
+    ).subscribe(state => {
+        estado = state; // Mantener sincronizado
+        dibujarTableroCompleto(state);
+        actualizarPosiciones(state);
+        
+        // Actualizar estadísticas en tiempo real
+        const activeElement = document.getElementById('stats-active');
+        if (activeElement) {
+            const activePlayers = Object.values(state.jugadores).filter(p => !p.terminado).length;
+            activeElement.textContent = activePlayers;
+        }
+        
+        const turnElement = document.getElementById('stats-turn');
+        if (turnElement) {
+            turnElement.textContent = state.turnoActual;
+        }
+    });
+    
+    // Suscripción a cambios de jugador actual
+    const playerSubscription = currentPlayer$.pipe(
+        distinctUntilChanged()
+    ).subscribe(playerId => {
+        // Resaltar jugador actual en la interfaz
+        document.querySelectorAll('.player-info').forEach((panel, index) => {
+            const panelElement = panel;
+            if (index + 1 === playerId) {
+                panelElement.classList.add('active-turn');
+                panelElement.style.transform = 'scale(1.05)';
+                panelElement.style.transition = 'transform 0.3s';
+            } else {
+                panelElement.classList.remove('active-turn');
+                panelElement.style.transform = 'scale(1)';
+            }
+        });
+        
+        // Actualizar información del turno
+        if (estado) {
+            actualizarInfoTurnoReactivo(estado);
+        }
+    });
+    
+    // Suscripción a todas las interacciones del usuario
+    const interactionsSubscription = userInteractions$.subscribe(interaction => {
+        console.log('👤 Interacción registrada via rxjs:', interaction.type || interaction.button);
+    });
+    
+    // Suscripción a estadísticas del juego
+    const statsSubscription = getGameStats$().pipe(
+        debounceTime(500)
+    ).subscribe(stats => {
+        // Actualizar turnos de jugadores
+        if (estado && estado.jugadores) {
+            Object.values(estado.jugadores).forEach(jugador => {
+                const turnosElement = document.getElementById(`turnos-jugador${jugador.id}`);
+                if (turnosElement) {
+                    turnosElement.textContent = jugador.turnos;
+                }
+            });
+        }
+    });
+    
+    // Añadir todas las suscripciones a la limpieza
+    const originalCleanup = cleanupObservables;
+    cleanupObservables = () => {
+        if (originalCleanup) originalCleanup();
+        stateSubscription.unsubscribe();
+        playerSubscription.unsubscribe();
+        interactionsSubscription.unsubscribe();
+        statsSubscription.unsubscribe();
+        console.log('✅ Todas las suscripciones reactivas limpiadas');
+    };
+}
+
+function actualizarInfoTurnoReactivo(estado) {
+    if (!estado || !estado.jugadores || !estado.jugadorActual) return;
+    
+    const { jugadorActual, jugadores } = estado; // Object destructuring - para acceder fácilmente a propiedades del estado
+    const jugador = jugadores[jugadorActual];
+    
+    const jugadorActualElement = document.getElementById('jugador-actual');
+    if (jugadorActualElement) {
+        jugadorActualElement.textContent = jugador.nombre;
+        // Añadir efecto visual
+        jugadorActualElement.classList.add('text-pulse');
         setTimeout(() => {
-            if (estado.juegoActivo) mostrarMensaje('', 'info');
-        }, 2000);
+            jugadorActualElement.classList.remove('text-pulse');
+        }, 1000);
     }
-}
-
-function configurarGuardadoAutomatico() {
-    // Guardar cuando se cierra la página
-    window.addEventListener('beforeunload', () => {
-        if (estado && estado.juegoActivo) {
-            guardarEstado(estado);
-        }
-    });
     
-    // Guardar cuando se cambia de página (hash change)
-    window.addEventListener('hashchange', () => {
-        if (estado && estado.juegoActivo) {
-            console.log('🌐 Cambiando de vista, guardando automáticamente...');
-            guardarEstado(estado);
-        }
-    });
-    
-    // Guardar periódicamente cada 60 segundos
-    setInterval(() => {
-        if (estado && estado.juegoActivo && !estado.dadoTirado) {
-            console.log('⏰ Guardado periódico automático');
-            guardarEstado(estado);
-        }
-    }, 60000);
-}
-
-// Función auxiliar para guardar al final de cada turno
-function guardarPartidaSiEsNecesario() {
-    if (estado && estado.juegoActivo && !estado.dadoTirado) {
-        console.log('💾 Guardando automáticamente al final del turno...');
-        guardarEstado(estado);
+    const badge = document.querySelector('#info-turno .badge');
+    if (badge) {
+        badge.className = `badge bg-${jugador.color} fs-5 p-3 pulse`;
     }
+    
+    const infoDados = document.getElementById('info-dados-turno');
+    if (infoDados) {
+        if (jugador.dadosAcumulados > 1) {
+            infoDados.textContent = `(Tirará ${jugador.dadosAcumulados} dados)`;
+            infoDados.className = 'text-warning fw-bold';
+        } else {
+            infoDados.textContent = '';
+            infoDados.className = '';
+        }
+    }
+    
+    // Emitir evento de actualización de turno
+    emitGameEvent('TURN_UPDATE', {
+        playerId: jugadorActual,
+        playerName: jugador.nombre,
+        diceCount: jugador.dadosAcumulados,
+        position: jugador.posicion
+    });
 }
 
-function manejarTirarDado() {
+function manejarTirarDadoReactivo() {
     if (!estado.juegoActivo || estado.dadoTirado) return;
     
     const jugador = estado.jugadores[estado.jugadorActual];
@@ -176,7 +383,11 @@ function manejarTirarDado() {
     if (jugador.terminado || estado.jugadoresInactivos.has(estado.jugadorActual)) {
         mostrarMensaje(`⚠️ ${jugador.nombre} no puede jugar ahora`, 'warning');
         siguienteTurno(estado);
-        guardarPartidaSiEsNecesario(); // Guardar incluso al pasar turno
+        emitGameEvent('TURN_SKIP', { 
+            playerId: estado.jugadorActual, 
+            reason: jugador.terminado ? 'finished' : 'inactive' 
+        });
+        gameState$.next(estado);
         return;
     }
     
@@ -188,21 +399,32 @@ function manejarTirarDado() {
     estado.valorDado = resultado.total;
     estado.dadoTirado = true;
     
+    // Emitir evento de dado con rxjs
+    emitGameEvent('DICE_ROLL', {
+        playerId: estado.jugadorActual,
+        result: resultado.resultados,
+        total: resultado.total,
+        numDados: numDados
+    });
+    
     mostrarResultadoDado(formatearResultadoDado(resultado, jugador.nombre));
     mostrarMensaje(`Avanzando ${estado.valorDado} casillas...`, 'primary');
     
     jugador.dadosAcumulados = 1;
     document.getElementById(`dados-jugador${estado.jugadorActual}`).textContent = 1;
     
+    // Actualizar estado reactivo
+    gameState$.next(estado);
+    
     document.getElementById('tirar-dado').disabled = true;
     document.getElementById('pasar-turno').disabled = true;
     
     setTimeout(() => {
-        moverJugador();
+        moverJugadorReactivo();
     }, 1500);
 }
 
-function manejarPasarTurno() {
+function manejarPasarTurnoReactivo() {
     if (!estado.juegoActivo || estado.dadoTirado) return;
     
     const jugador = estado.jugadores[estado.jugadorActual];
@@ -210,7 +432,8 @@ function manejarPasarTurno() {
     if (jugador.terminado) {
         mostrarMensaje(`⚠️ ${jugador.nombre} ya terminó el juego`, 'warning');
         siguienteTurno(estado);
-        guardarPartidaSiEsNecesario();
+        emitGameEvent('TURN_SKIP', { playerId: estado.jugadorActual, reason: 'finished' });
+        gameState$.next(estado);
         return;
     }
     
@@ -220,11 +443,19 @@ function manejarPasarTurno() {
         jugador.dadosAcumulados = 1;
         document.getElementById(`dados-jugador${estado.jugadorActual}`).textContent = 1;
         
+        emitGameEvent('PLAYER_INACTIVE', { 
+            playerId: estado.jugadorActual, 
+            turnsInactive: 1 
+        });
+        
         setTimeout(() => {
             estado.dadoTirado = false;
             siguienteTurno(estado);
-            // Guardar automáticamente
-            guardarPartidaSiEsNecesario();
+            emitGameEvent('TURN_CHANGE', { 
+                from: estado.jugadorActual, 
+                to: (estado.jugadorActual % 4) + 1 
+            });
+            gameState$.next(estado);
         }, 2000);
         return;
     }
@@ -238,33 +469,59 @@ function manejarPasarTurno() {
         mostrarResultadoDado(`⏭️ ${jugador.nombre} pasa el turno`);
         mostrarMensaje(`¡Estrategia! Próximo turno tirarás ${jugador.dadosAcumulados} dados`, 'info');
         
+        emitGameEvent('TURN_PASS', { 
+            playerId: estado.jugadorActual, 
+            newDiceCount: jugador.dadosAcumulados 
+        });
+        
         document.getElementById('tirar-dado').disabled = true;
         document.getElementById('pasar-turno').disabled = true;
         
         setTimeout(() => {
             estado.dadoTirado = false;
             siguienteTurno(estado);
-            // Guardar automáticamente
-            guardarPartidaSiEsNecesario();
+            emitGameEvent('TURN_CHANGE', { 
+                from: estado.jugadorActual, 
+                to: (estado.jugadorActual % 4) + 1 
+            });
+            gameState$.next(estado);
             document.getElementById('tirar-dado').disabled = false;
             document.getElementById('pasar-turno').disabled = false;
         }, 2000);
     } else {
         mostrarResultadoDado(`🎲 ${jugador.nombre} ya tiene el máximo de dados (3)`);
         mostrarMensaje("¡Ya tienes el máximo de dados acumulados (3)! Tira el dado para jugar.", 'warning');
+        emitGameEvent('MAX_DICE_REACHED', { playerId: estado.jugadorActual });
     }
 }
 
-function moverJugador() {
+function moverJugadorReactivo() {
     const jugador = estado.jugadores[estado.jugadorActual];
     const nuevaPosicion = jugador.posicion + estado.valorDado;
+    
+    // Emitir evento de inicio de movimiento
+    emitGameEvent('PLAYER_MOVE_START', {
+        playerId: estado.jugadorActual,
+        from: jugador.posicion,
+        diceValue: estado.valorDado,
+        targetPosition: nuevaPosicion
+    });
     
     if (nuevaPosicion > 63) {
         const exceso = nuevaPosicion - 63;
         jugador.posicion = 63 - exceso;
         mostrarMensaje("¡Te pasaste de la meta! Retrocedes las casillas sobrantes.", 'warning');
         dibujarTableroCompleto(estado);
-        procesarDespuesDeMovimiento(jugador);
+        
+        // Emitir evento de movimiento con rebote
+        emitGameEvent('PLAYER_MOVE_BOUNCE', {
+            playerId: estado.jugadorActual,
+            attempted: nuevaPosicion,
+            actual: jugador.posicion,
+            bounce: exceso
+        });
+        
+        procesarDespuesDeMovimientoReactivo(jugador);
     } else {
         const posicionFinalDeseada = nuevaPosicion;
         
@@ -275,18 +532,36 @@ function moverJugador() {
             () => {
                 jugador.posicion = posicionFinalDeseada;
                 dibujarTableroCompleto(estado);
-                procesarDespuesDeMovimiento(jugador);
+                
+                // Emitir evento de movimiento exitoso
+                emitGameEvent('PLAYER_MOVE', {
+                    playerId: estado.jugadorActual,
+                    from: jugador.posicion - estado.valorDado,
+                    to: jugador.posicion,
+                    diceValue: estado.valorDado,
+                    cellType: estado.tablero[jugador.posicion]?.especial?.tipo
+                });
+                
+                procesarDespuesDeMovimientoReactivo(jugador);
             }, 
             estado
         );
     }
 }
 
-function procesarDespuesDeMovimiento(jugador) {
+function procesarDespuesDeMovimientoReactivo(jugador) {
     // Primero verificar si llegó a la meta
     if (jugador.posicion === 63 && !jugador.terminado) {
         jugador.terminado = true;
         jugador.posicionFinal = 1;
+        
+        // Emitir evento de victoria con rxjs
+        emitGameEvent('VICTORY', {
+            playerId: estado.jugadorActual,
+            playerName: jugador.nombre,
+            turns: jugador.turnos,
+            finalPosition: jugador.posicion
+        });
         
         mostrarMensaje(`🎉 ¡${jugador.nombre} ha llegado a la meta!`, 'success');
         calcularPosicionesFinales(estado.jugadores);
@@ -299,7 +574,7 @@ function procesarDespuesDeMovimiento(jugador) {
             </div>
         `;
         
-        finalizarJuego();
+        finalizarJuegoReactivo();
         return;
     }
     
@@ -308,37 +583,45 @@ function procesarDespuesDeMovimiento(jugador) {
         const resultadoCasillaEspecial = procesarCasillaEspecial(jugador, estado);
         
         if (resultadoCasillaEspecial) {
-            // Si tiene una acción, ejecutarla
+            // Emitir evento de casilla especial
+            const cellType = estado.tablero[jugador.posicion]?.especial?.tipo;
+            emitGameEvent('SPECIAL_CELL', {
+                playerId: estado.jugadorActual,
+                cellType: cellType,
+                message: resultadoCasillaEspecial.accion ? resultadoCasillaEspecial.accion() : '',
+                keepTurn: resultadoCasillaEspecial.mantenerTurno
+            });
+            
             if (resultadoCasillaEspecial.accion) {
                 const mensajeExtra = resultadoCasillaEspecial.accion();
                 mostrarMensaje(mensajeExtra, 'warning');
                 
-                // Verificar si hay jugadores en el pozo para liberar
                 if (estado.jugadoresInactivos.size > 0) {
                     const mensajeLiberacion = liberarDelPozo(estado);
                     if (mensajeLiberacion) {
                         mostrarMensaje(mensajeLiberacion, 'success');
+                        emitGameEvent('PLAYER_FREED', { 
+                            freedPlayer: Array.from(estado.jugadoresInactivos)[0] 
+                        });
                     }
                 }
             }
             
             estado.mantenerTurno = resultadoCasillaEspecial.mantenerTurno || false;
             
-            // SI MANTIENE TURNO: Guardar ahora y quedarse en mismo jugador
             if (estado.mantenerTurno) {
                 estado.dadoTirado = false;
                 dibujarTableroCompleto(estado);
                 document.getElementById('tirar-dado').disabled = false;
                 document.getElementById('pasar-turno').disabled = false;
-                actualizarInfoTurno(estado);
+                actualizarInfoTurnoReactivo(estado);
                 
-                // Guardar automáticamente
-                guardarPartidaSiEsNecesario();
+                // Actualizar estado reactivo
+                gameState$.next(estado);
                 return;
             }
         }
         
-        // NO mantiene turno: Preparar para cambiar de jugador
         estado.dadoTirado = false;
         dibujarTableroCompleto(estado);
         
@@ -347,16 +630,32 @@ function procesarDespuesDeMovimiento(jugador) {
         
         setTimeout(() => {
             siguienteTurno(estado);
-            actualizarInfoTurno(estado);
             
-            // ¡GUARDAR AUTOMÁTICAMENTE! Turno completamente terminado
-            guardarPartidaSiEsNecesario();
+            // Emitir evento de cambio de turno con rxjs
+            emitGameEvent('TURN_CHANGE', {
+                from: estado.jugadorActual,
+                to: (estado.jugadorActual % 4) + 1,
+                turnNumber: estado.turnoActual
+            });
+            
+            estado.turnoActual++;
+            actualizarInfoTurnoReactivo(estado);
+            
+            // Actualizar estado reactivo
+            gameState$.next(estado);
         }, 1500);
     }
 }
 
-function finalizarJuego() {
+function finalizarJuegoReactivo() {
     estado.juegoActivo = false;
+    
+    // Emitir evento de fin de juego
+    emitGameEvent('GAME_END', {
+        winner: Object.values(estado.jugadores).find(j => j.posicionFinal === 1),
+        totalTurns: estado.turnoActual,
+        timestamp: new Date().toISOString()
+    });
     
     document.getElementById('tirar-dado').disabled = true;
     document.getElementById('pasar-turno').disabled = true;
@@ -367,15 +666,31 @@ function finalizarJuego() {
     mostrarTablaPosiciones(estado.jugadores);
     guardarEstadisticasJuego(estado);
     
-    // Limpiar estado guardado al finalizar
     limpiarEstadoGuardado();
+    
+    // Actualizar estado reactivo
+    gameState$.next(estado);
 }
 
-function reiniciarJuego() {
-    // Reiniciar automáticamente sin confirmación
+function reiniciarJuegoReactivo() {
+    // Emitir evento de reinicio
+    emitGameEvent('GAME_RESTART', { 
+        timestamp: new Date().toISOString(),
+        previousState: estado 
+    });
+    
     limpiarEstadoGuardado();
     estado = createInitialState();
     
+    // Resetear contadores de UI
+    document.getElementById('stats-events').textContent = '0';
+    document.getElementById('stats-rolls').textContent = '0';
+    
+    // Actualizar observables
+    gameState$.next(estado);
+    currentPlayer$.next(estado.jugadorActual);
+    
+    // Restaurar interfaz
     document.getElementById('tirar-dado').disabled = false;
     document.getElementById('pasar-turno').disabled = false;
     document.getElementById('tirar-dado').style.display = 'inline-block';
@@ -394,8 +709,14 @@ function reiniciarJuego() {
     mostrarMensaje('🔄 Nueva partida comenzada', 'info');
     
     dibujarTableroCompleto(estado);
-    actualizarInfoTurno(estado);
+    actualizarInfoTurnoReactivo(estado);
     
-    // Guardar nuevo estado automáticamente
     guardarEstado(estado);
+}
+
+// Exportar función para limpiar
+export function limpiarJuego() {
+    if (cleanupObservables) {
+        cleanupObservables();
+    }
 }

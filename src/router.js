@@ -1,4 +1,4 @@
-// router.js - SIMPLIFICADO
+// router.js - VERSIÓN SIMPLIFICADA
 import { iniciarJuego } from "./game/juego.js";
 import { getSession } from "./services/supaservice.js";
 

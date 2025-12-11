@@ -1,4 +1,4 @@
-// game/stats/gameStats.js
+// game/stats/gameStats.js - CORREGIDO
 import { getSession, saveGameState, updateUserStats } from "../../services/supaservice.js";
 
 export function calcularPosicionesFinales(jugadores) {
@@ -125,12 +125,21 @@ export function guardarEstadisticasJuego(estado) {
     };
     
     if (userId) {
+        // Usar subscribe en lugar de then (porque es Observable)
         saveGameState(gameData).then(result => {
             console.log("✅ Juego guardado en Supabase");
-            updateUserStats(statsUpdate).then(result => {
-                console.log("✅ Estadísticas actualizadas");
-            }).catch(console.error);
-        }).catch(console.error);
+            // updateUserStats ahora es un Observable, usar subscribe
+            updateUserStats(statsUpdate).subscribe({
+                next: (result) => {
+                    console.log("✅ Estadísticas actualizadas", result);
+                },
+                error: (error) => {
+                    console.error("❌ Error actualizando estadísticas:", error);
+                }
+            });
+        }).catch(error => {
+            console.error("❌ Error guardando juego:", error);
+        });
     } else if (isGuest) {
         const localGames = JSON.parse(localStorage.getItem('oca_games') || '[]');
         localGames.push({

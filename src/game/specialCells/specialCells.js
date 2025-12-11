@@ -1,4 +1,4 @@
-// game/specialCells/specialCells.js
+// game/specialCells/specialCells.js - CORREGIDO
 export function procesarCasillaEspecial(jugador, estado) {
     console.log('Procesando casilla especial:', jugador.posicion);
     
@@ -84,7 +84,13 @@ function procesarPuente(jugador, estado, especial) {
 }
 
 function procesarPosada(jugador, estado, especial) {
-    console.log('POSADA: Jugador pierde turno');
+    console.log('POSADA: Jugador pierde 1 turno');
+    
+    // Añadir contador de turnos de inactividad
+    if (!jugador.turnosInactivo) {
+        jugador.turnosInactivo = 0;
+    }
+    jugador.turnosInactivo = 1; // Pierde 1 turno
     
     return {
         mantenerTurno: false,
@@ -97,8 +103,15 @@ function procesarPosada(jugador, estado, especial) {
 }
 
 function procesarPozo(jugador, estado, especial) {
-    console.log('POZO: Jugador inactivo');
+    console.log('POZO: Jugador inactivo hasta que otro lo libere');
+    
+    // Añadir al conjunto de jugadores inactivos
     estado.jugadoresInactivos.add(jugador.id);
+    
+    // Guardar tipo de inactividad
+    if (!jugador.tipoInactividad) {
+        jugador.tipoInactividad = 'pozo';
+    }
     
     return {
         mantenerTurno: false,
@@ -112,7 +125,13 @@ function procesarPozo(jugador, estado, especial) {
 
 function procesarCarcel(jugador, estado, especial) {
     console.log('CARCEL: Jugador inactivo por 2 turnos');
+    
+    // Añadir al conjunto de jugadores inactivos
     estado.jugadoresInactivos.add(jugador.id);
+    
+    // Guardar tipo de inactividad y contador de turnos
+    jugador.tipoInactividad = 'carcel';
+    jugador.turnosInactivo = 2; // Debe perder 2 turnos
     
     return {
         mantenerTurno: false,
@@ -139,12 +158,99 @@ function procesarRetroceso(jugador, estado, especial) {
 }
 
 export function liberarDelPozo(estado) {
-    if (estado.jugadoresInactivos.size > 0) {
-        const jugadorLiberado = Array.from(estado.jugadoresInactivos)[0];
+    // Verificar si hay algún jugador que cumpla condiciones para ser liberado
+    let jugadorLiberado = null;
+    
+    for (const jugadorId of estado.jugadoresInactivos) {
+        const jugador = estado.jugadores[jugadorId];
+        
+        // Si es pozo, se libera cuando otro jugador cae en su casilla
+        if (jugador.tipoInactividad === 'pozo') {
+            // Verificar si alguien está en la misma casilla
+            const hayOtroEnMismaCasilla = Object.values(estado.jugadores).some(j => 
+                j.id !== jugadorId && 
+                j.posicion === jugador.posicion && 
+                !estado.jugadoresInactivos.has(j.id)
+            );
+            
+            if (hayOtroEnMismaCasilla) {
+                jugadorLiberado = jugadorId;
+                break;
+            }
+        }
+        
+        // Si es cárcel, se libera después de 2 turnos
+        if (jugador.tipoInactividad === 'carcel') {
+            if (jugador.turnosInactivo !== undefined) {
+                jugador.turnosInactivo--;
+                
+                if (jugador.turnosInactivo <= 0) {
+                    jugadorLiberado = jugadorId;
+                    // Limpiar propiedades
+                    delete jugador.tipoInactividad;
+                    delete jugador.turnosInactivo;
+                    break;
+                }
+            }
+        }
+        
+        // Si es posada, se libera después de 1 turno
+        if (jugador.tipoInactividad === 'posada') {
+            if (jugador.turnosInactivo !== undefined) {
+                jugador.turnosInactivo--;
+                
+                if (jugador.turnosInactivo <= 0) {
+                    jugadorLiberado = jugadorId;
+                    // Limpiar propiedades
+                    delete jugador.tipoInactividad;
+                    delete jugador.turnosInactivo;
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (jugadorLiberado) {
         estado.jugadoresInactivos.delete(jugadorLiberado);
-        const mensaje = `¡Has liberado a ${estado.jugadores[jugadorLiberado].nombre} del pozo/cárcel!`;
-        console.log('Liberación del pozo:', mensaje);
+        const jugador = estado.jugadores[jugadorLiberado];
+        const mensaje = `¡${jugador.nombre} ha sido liberado ${jugador.tipoInactividad === 'carcel' ? 'de la cárcel' : jugador.tipoInactividad === 'pozo' ? 'del pozo' : 'de la posada'}!`;
+        console.log('Liberación:', mensaje);
+        
+        // Limpiar propiedades
+        delete jugador.tipoInactividad;
+        delete jugador.turnosInactivo;
+        
         return mensaje;
     }
+    
     return "";
 }
+
+// Nueva función para procesar inactividades al inicio de cada turno
+export function procesarInactividades(estado, jugadorId) {
+    const jugador = estado.jugadores[jugadorId];
+    
+    if (estado.jugadoresInactivos.has(jugadorId)) {
+        // Si el jugador está inactivo, no puede jugar este turno
+        console.log(`⏸️ ${jugador.nombre} está inactivo, pierde el turno`);
+        
+        // Reducir contador si existe
+        if (jugador.turnosInactivo !== undefined) {
+            jugador.turnosInactivo--;
+            console.log(`Turnos restantes inactivo: ${jugador.turnosInactivo}`);
+            
+            if (jugador.turnosInactivo <= 0) {
+                // Se libera automáticamente
+                estado.jugadoresInactivos.delete(jugadorId);
+                delete jugador.tipoInactividad;
+                delete jugador.turnosInactivo;
+                console.log(`✅ ${jugador.nombre} ha completado su inactividad`);
+            }
+        }
+        
+        return true; // Jugador inactivo
+    }
+    
+    return false; // Jugador activo
+}
+
