@@ -1,10 +1,10 @@
-// router.js
+// router.js - SIMPLIFICADO
 import { iniciarJuego } from "./game/juego.js";
 import { getSession } from "./services/supaservice.js";
 
-// Importar los componentes para que se registren
-import "./components/login.js";      // game-login, game-register
-import "./components/stats.js";      // game-stats
+// Importar los componentes
+import "./components/login.js";
+import "./components/stats.js";
 
 export { router };
 
@@ -24,13 +24,19 @@ function renderGame() {
 function checkAuth(route) {
     const userId = getSession();
     const isGuest = localStorage.getItem('guestMode') === 'true';
+    const partidaGuardada = localStorage.getItem('oca_game_state');
+    
+    // Si hay partida guardada, permitir siempre ir al juego
+    if (route === '#game' && partidaGuardada) {
+        return true;
+    }
     
     // Rutas que requieren autenticación
     const protectedRoutes = ['#game', '#stats'];
     const authRoutes = ['#login', '#register'];
     
     // Si está en ruta protegida y no está autenticado
-    if (protectedRoutes.includes(route) && !userId && !isGuest) {
+    if (protectedRoutes.includes(route) && !userId && !isGuest && !partidaGuardada) {
         window.location.hash = '#login';
         return false;
     }
@@ -60,7 +66,6 @@ function router(route, container) {
             renderGame();
         } else {
             const elementName = routes.get(route);
-            // IMPORTANTE: Verificar si el elemento existe
             if (customElements.get(elementName)) {
                 container.replaceChildren(document.createElement(elementName));
             } else {

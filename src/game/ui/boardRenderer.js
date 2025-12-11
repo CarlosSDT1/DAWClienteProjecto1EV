@@ -1,13 +1,52 @@
 // game/ui/boardRenderer.js
 import { obtenerIconoEspecial } from '../board/boardManager.js';
 import { actualizarPosiciones, actualizarEstadosJugadores } from '../players/playerManager.js';
-import { actualizarInfoCarrera } from './gameUI.js'; // Asegúrate que sea './gameUI.js'
+import { actualizarInfoCarrera } from './gameUI.js';
+import { hayPartidaEnCurso } from '../state/gameState.js';
 
 export function dibujarTableroCompleto(estado) {
     const tableroElement = document.getElementById('tablero');
     if (!tableroElement) {
         console.error('Elemento #tablero no encontrado');
         return;
+    }
+    
+    // Crear o actualizar indicador de partida guardada
+    let indicador = document.getElementById('indicador-partida-guardada');
+    if (!indicador) {
+        indicador = document.createElement('div');
+        indicador.id = 'indicador-partida-guardada';
+        indicador.className = 'indicador-guardado';
+        indicador.innerHTML = '💾 Auto-guardado';
+        indicador.style.cssText = `
+            position: absolute;
+            top: -30px;
+            right: 0;
+            background: #28a745;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+        `;
+        
+        // Encontrar el contenedor padre adecuado
+        const container = tableroElement.closest('.col-md-10') || tableroElement.parentElement;
+        if (container) {
+            container.style.position = 'relative';
+            container.appendChild(indicador);
+        }
+    }
+    
+    // Mostrar indicador si hay partida guardada
+    if (indicador && hayPartidaEnCurso() && estado && estado.juegoActivo) {
+        indicador.style.opacity = '1';
+        // Ocultar después de 2 segundos
+        setTimeout(() => {
+            if (indicador) indicador.style.opacity = '0';
+        }, 2000);
     }
     
     tableroElement.innerHTML = '';

@@ -94,6 +94,21 @@ const renderLogin = (method) => {
 export function checkIfAlreadyAuthenticated() {
     const userId = localStorage.getItem('user_id');
     const isGuest = localStorage.getItem('guestMode') === 'true';
+    const partidaGuardada = localStorage.getItem('oca_game_state');
+    
+    // Si hay partida en curso, NO redirigir automáticamente
+    // Dejar que el usuario decida en el juego
+    if (partidaGuardada) {
+        try {
+            const estado = JSON.parse(partidaGuardada);
+            if (estado.juegoActivo) {
+                // Si hay partida activa, mostrar login normalmente
+                return false;
+            }
+        } catch (e) {
+            // Error parsing, continuar normal
+        }
+    }
     
     if (userId || isGuest) {
         // Si ya está autenticado, redirigir al juego

@@ -1,5 +1,5 @@
-// game/juego.js - COMPLETO CON TODAS LAS IMPORTACIONES
-import { createInitialState } from './state/gameState.js';
+// game/juego.js - COMPLETO AUTOMÁTICO
+import { createInitialState, guardarEstado, limpiarEstadoGuardado, hayPartidaEnCurso } from './state/gameState.js';
 import { siguienteTurno, actualizarPosiciones, actualizarEstadosJugadores } from './players/playerManager.js';
 import { tirarDado, formatearResultadoDado } from './dice/diceManager.js';
 import { procesarCasillaEspecial, liberarDelPozo } from './specialCells/specialCells.js';
@@ -12,11 +12,30 @@ let estado;
 
 export function iniciarJuego() {
     console.log('Iniciando juego...');
-    estado = createInitialState();
+    
+    // Cargar automáticamente si hay partida guardada
+    if (hayPartidaEnCurso()) {
+        console.log('🔍 Detectada partida guardada, cargando automáticamente...');
+        estado = createInitialState(); // Esto cargará el estado guardado automáticamente
+        mostrarMensaje('✅ Partida anterior cargada automáticamente', 'success');
+    } else {
+        estado = createInitialState();
+        mostrarMensaje('🆕 Nueva partida comenzada', 'info');
+    }
+    
     renderizarInterfaz();
     configurarEventListeners();
     dibujarTableroCompleto(estado);
     actualizarInfoTurno(estado);
+    
+    // Configurar guardado automático
+    configurarGuardadoAutomatico();
+    
+    // Guardar estado inicial
+    guardarEstado(estado);
+    
+    // Mostrar indicador de partida cargada
+    setTimeout(() => mostrarMensaje('', 'info'), 3000);
 }
 
 function renderizarInterfaz() {
@@ -52,7 +71,10 @@ function renderizarInterfaz() {
             <div class="text-center mt-4">
                 <button id="tirar-dado" class="btn btn-success btn-lg me-2">Tirar Dado</button>
                 <button id="pasar-turno" class="btn btn-info btn-lg me-2">Pasar Turno</button>
-                <button id="reiniciar" class="btn btn-primary btn-lg">Nuevo Juego</button>
+                <button id="guardar-partida" class="btn btn-secondary btn-lg me-2" title="Guardar partida actual">
+                    💾 Guardar
+                </button>
+                <button id="reiniciar" class="btn btn-primary btn-lg">Nueva Partida</button>
             </div>
 
             ${renderizarPanelesJugadores()}
@@ -101,6 +123,49 @@ function configurarEventListeners() {
     document.getElementById('tirar-dado')?.addEventListener('click', manejarTirarDado);
     document.getElementById('pasar-turno')?.addEventListener('click', manejarPasarTurno);
     document.getElementById('reiniciar')?.addEventListener('click', reiniciarJuego);
+    document.getElementById('guardar-partida')?.addEventListener('click', manejarGuardarManual);
+}
+
+function manejarGuardarManual() {
+    if (guardarEstado(estado)) {
+        mostrarMensaje('✅ Partida guardada', 'success');
+        setTimeout(() => {
+            if (estado.juegoActivo) mostrarMensaje('', 'info');
+        }, 2000);
+    }
+}
+
+function configurarGuardadoAutomatico() {
+    // Guardar cuando se cierra la página
+    window.addEventListener('beforeunload', () => {
+        if (estado && estado.juegoActivo) {
+            guardarEstado(estado);
+        }
+    });
+    
+    // Guardar cuando se cambia de página (hash change)
+    window.addEventListener('hashchange', () => {
+        if (estado && estado.juegoActivo) {
+            console.log('🌐 Cambiando de vista, guardando automáticamente...');
+            guardarEstado(estado);
+        }
+    });
+    
+    // Guardar periódicamente cada 60 segundos
+    setInterval(() => {
+        if (estado && estado.juegoActivo && !estado.dadoTirado) {
+            console.log('⏰ Guardado periódico automático');
+            guardarEstado(estado);
+        }
+    }, 60000);
+}
+
+// Función auxiliar para guardar al final de cada turno
+function guardarPartidaSiEsNecesario() {
+    if (estado && estado.juegoActivo && !estado.dadoTirado) {
+        console.log('💾 Guardando automáticamente al final del turno...');
+        guardarEstado(estado);
+    }
 }
 
 function manejarTirarDado() {
@@ -111,6 +176,7 @@ function manejarTirarDado() {
     if (jugador.terminado || estado.jugadoresInactivos.has(estado.jugadorActual)) {
         mostrarMensaje(`⚠️ ${jugador.nombre} no puede jugar ahora`, 'warning');
         siguienteTurno(estado);
+        guardarPartidaSiEsNecesario(); // Guardar incluso al pasar turno
         return;
     }
     
@@ -144,6 +210,7 @@ function manejarPasarTurno() {
     if (jugador.terminado) {
         mostrarMensaje(`⚠️ ${jugador.nombre} ya terminó el juego`, 'warning');
         siguienteTurno(estado);
+        guardarPartidaSiEsNecesario();
         return;
     }
     
@@ -156,6 +223,8 @@ function manejarPasarTurno() {
         setTimeout(() => {
             estado.dadoTirado = false;
             siguienteTurno(estado);
+            // Guardar automáticamente
+            guardarPartidaSiEsNecesario();
         }, 2000);
         return;
     }
@@ -175,6 +244,8 @@ function manejarPasarTurno() {
         setTimeout(() => {
             estado.dadoTirado = false;
             siguienteTurno(estado);
+            // Guardar automáticamente
+            guardarPartidaSiEsNecesario();
             document.getElementById('tirar-dado').disabled = false;
             document.getElementById('pasar-turno').disabled = false;
         }, 2000);
@@ -188,18 +259,11 @@ function moverJugador() {
     const jugador = estado.jugadores[estado.jugadorActual];
     const nuevaPosicion = jugador.posicion + estado.valorDado;
     
-    console.log('moverJugador:', {
-        jugador: jugador.nombre,
-        posicionActual: jugador.posicion,
-        valorDado: estado.valorDado,
-        nuevaPosicion: nuevaPosicion
-    });
-    
     if (nuevaPosicion > 63) {
         const exceso = nuevaPosicion - 63;
         jugador.posicion = 63 - exceso;
         mostrarMensaje("¡Te pasaste de la meta! Retrocedes las casillas sobrantes.", 'warning');
-        dibujarTableroCompleto(estado); // Asegurar que se redibuje
+        dibujarTableroCompleto(estado);
         procesarDespuesDeMovimiento(jugador);
     } else {
         const posicionFinalDeseada = nuevaPosicion;
@@ -210,7 +274,7 @@ function moverJugador() {
             posicionFinalDeseada, 
             () => {
                 jugador.posicion = posicionFinalDeseada;
-                dibujarTableroCompleto(estado); // Asegurar que se redibuje
+                dibujarTableroCompleto(estado);
                 procesarDespuesDeMovimiento(jugador);
             }, 
             estado
@@ -219,12 +283,8 @@ function moverJugador() {
 }
 
 function procesarDespuesDeMovimiento(jugador) {
-    console.log('procesarDespuesDeMovimiento llamado para:', jugador.nombre);
-    console.log('Posición actual:', jugador.posicion);
-    
     // Primero verificar si llegó a la meta
     if (jugador.posicion === 63 && !jugador.terminado) {
-        console.log('¡Llegó a la meta!');
         jugador.terminado = true;
         jugador.posicionFinal = 1;
         
@@ -245,12 +305,9 @@ function procesarDespuesDeMovimiento(jugador) {
     
     if (estado.juegoActivo) {
         // Verificar casilla especial
-        console.log('Verificando casilla especial...');
         const resultadoCasillaEspecial = procesarCasillaEspecial(jugador, estado);
         
         if (resultadoCasillaEspecial) {
-            console.log('Resultado casilla especial:', resultadoCasillaEspecial);
-            
             // Si tiene una acción, ejecutarla
             if (resultadoCasillaEspecial.accion) {
                 const mensajeExtra = resultadoCasillaEspecial.accion();
@@ -265,24 +322,23 @@ function procesarDespuesDeMovimiento(jugador) {
                 }
             }
             
-            // IMPORTANTE: Actualizar si mantiene el turno
             estado.mantenerTurno = resultadoCasillaEspecial.mantenerTurno || false;
-            console.log('mantenerTurno después de casilla especial:', estado.mantenerTurno);
             
-            // Si mantiene el turno, NO avanzar al siguiente jugador
+            // SI MANTIENE TURNO: Guardar ahora y quedarse en mismo jugador
             if (estado.mantenerTurno) {
-                console.log('Jugador mantiene el turno');
                 estado.dadoTirado = false;
                 dibujarTableroCompleto(estado);
                 document.getElementById('tirar-dado').disabled = false;
                 document.getElementById('pasar-turno').disabled = false;
                 actualizarInfoTurno(estado);
-                return; // Salir aquí, el jugador tira otra vez
+                
+                // Guardar automáticamente
+                guardarPartidaSiEsNecesario();
+                return;
             }
         }
         
-        // Si NO mantiene el turno, continuar normal
-        console.log('Avanzando al siguiente turno');
+        // NO mantiene turno: Preparar para cambiar de jugador
         estado.dadoTirado = false;
         dibujarTableroCompleto(estado);
         
@@ -292,6 +348,9 @@ function procesarDespuesDeMovimiento(jugador) {
         setTimeout(() => {
             siguienteTurno(estado);
             actualizarInfoTurno(estado);
+            
+            // ¡GUARDAR AUTOMÁTICAMENTE! Turno completamente terminado
+            guardarPartidaSiEsNecesario();
         }, 1500);
     }
 }
@@ -307,9 +366,14 @@ function finalizarJuego() {
     dibujarTableroCompleto(estado);
     mostrarTablaPosiciones(estado.jugadores);
     guardarEstadisticasJuego(estado);
+    
+    // Limpiar estado guardado al finalizar
+    limpiarEstadoGuardado();
 }
 
 function reiniciarJuego() {
+    // Reiniciar automáticamente sin confirmación
+    limpiarEstadoGuardado();
     estado = createInitialState();
     
     document.getElementById('tirar-dado').disabled = false;
@@ -327,8 +391,11 @@ function reiniciarJuego() {
     `;
     
     document.getElementById('dado-resultado').textContent = '';
-    mostrarMensaje('¡Nuevo juego comenzado! Es tu turno, Jugador 1.', 'success');
+    mostrarMensaje('🔄 Nueva partida comenzada', 'info');
     
     dibujarTableroCompleto(estado);
     actualizarInfoTurno(estado);
+    
+    // Guardar nuevo estado automáticamente
+    guardarEstado(estado);
 }

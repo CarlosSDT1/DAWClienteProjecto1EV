@@ -279,3 +279,67 @@ h1 {
     opacity: 0.5;
     transform: none !important;
 }
+
+// Añadir al final del archivo style.scss:
+
+// Indicador de partida guardada
+.indicador-guardado {
+    position: absolute;
+    top: -35px;
+    right: 10px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    z-index: 1000;
+    box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    animation: slideIn 0.5s ease-out;
+    
+    &::before {
+        content: '💾 ';
+        margin-right: 5px;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+// Botón de guardar manual
+#guardar-partida {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    border: none;
+    color: white;
+    transition: all 0.3s;
+    
+    &:hover {
+        background: linear-gradient(135deg, #5a6268, #343a40);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    &:active {
+        transform: translateY(0);
+    }
+}
+
+// Botón de nueva partida
+#reiniciar {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    border: none;
+    
+    &:hover {
+        background: linear-gradient(135deg, #0056b3, #004085);
+        transform: translateY(-2px);
+    }
+}
