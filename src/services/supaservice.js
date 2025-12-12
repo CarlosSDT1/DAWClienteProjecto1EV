@@ -203,13 +203,43 @@ const saveGameState = async (gameState) => {
     headers: headerFactory({ Prefer: "return=representation" }),
     body: JSON.stringify({
       user_id: userId,
-      game_state: gameState,
-      finished: false,
+      game_state: gameState.game_state, // Solo el objeto game_state
+      user_won: gameState.user_won || false, // ← NUEVO campo
       created_at: new Date().toISOString()
+      // Quitamos 'finished' porque siempre es true
     })
   });
   return result;
-}
+};
+
+export const createManualGame = async (gameData) => {
+  const userId = getSession();
+  if (!userId) {
+    // Guardar localmente
+    const games = JSON.parse(localStorage.getItem('oca_games') || '[]');
+    gameData.local_id = Date.now();
+    games.push(gameData);
+    localStorage.setItem('oca_games', JSON.stringify(games));
+    return { success: true, local: true };
+  }
+  
+  try {
+    const result = await fetchSupabase(`${SUPABASE_URL}/rest/v1/oca_games`, {
+      method: "POST",
+      headers: headerFactory({ Prefer: "return=representation" }),
+      body: JSON.stringify({
+        user_id: userId,
+        game_state: gameData.game_state,
+        user_won: gameData.user_won || false,
+        created_at: new Date().toISOString()
+      })
+    });
+    return { success: true, result };
+  } catch (error) {
+    console.log('Error creando partida:', error);
+    throw error;
+  }
+};
 
 // Versión con Observable
 const saveGameStateObservable = (gameState) => {
@@ -348,59 +378,83 @@ const incrementUserStats = async (statsToUpdate) => {
 }
 
 // Versión con Observable
-const updateUserStatsObservable = (stats) => {
+export const updateUserStats = async (stats) => {
   const userId = getSession();
   if (!userId) {
-    console.log('⚠️ No hay usuario, no se actualizan estadísticas');
-    return of({ success: false, reason: 'no_user' });
+    console.log('No hay usuario');
+    return { success: false, reason: 'no_user' };
   }
   
-  return getUserStatsObservable().pipe(
-    switchMap(currentStats => {
-      if (currentStats) {
-        // Actualizar existentes
-        const updatedStats = {
-          games_played: (currentStats.games_played || 0) + (stats.games_played || 0),
-          games_won: (currentStats.games_won || 0) + (stats.games_won || 0),
-          total_turns: (currentStats.total_turns || 0) + (stats.total_turns || 0),
-          last_played: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        return fetchSupabaseObservable(`${SUPABASE_URL}/rest/v1/player_stats?id=eq.${currentStats.id}`, {
-          method: "PATCH",
-          headers: headerFactory({ Prefer: "return=representation" }),
-          body: JSON.stringify(updatedStats)
-        }).pipe(
-          map(result => ({ success: true, result, updated: true }))
-        );
+  try {
+    // Obtener estadísticas actuales
+    const currentStats = await getUserStats();
+    
+    if (currentStats && currentStats.id) {
+      // Calcular nuevos valores
+      const updatedStats = {
+        games_played: Math.max(0, (currentStats.games_played || 0) + (stats.games_played || 0)),
+        games_won: Math.max(0, (currentStats.games_won || 0) + (stats.games_won || 0)),
+        total_turns: Math.max(0, (currentStats.total_turns || 0) + (stats.total_turns || 0)),
+        last_played: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      // Actualizar en Supabase
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/player_stats?id=eq.${currentStats.id}`, {
+        method: "PATCH",
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${localStorage.getItem('access_token') || SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(updatedStats)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        return { success: true, result, updated: true };
       } else {
-        // Crear nuevas
-        const newStats = {
-          user_id: userId,
-          games_played: stats.games_played || 0,
-          games_won: stats.games_won || 0,
-          total_turns: stats.total_turns || 0,
-          last_played: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        return fetchSupabaseObservable(`${SUPABASE_URL}/rest/v1/player_stats`, {
-          method: "POST",
-          headers: headerFactory({ Prefer: "return=representation" }),
-          body: JSON.stringify(newStats)
-        }).pipe(
-          map(result => ({ success: true, result, created: true }))
-        );
+        throw new Error('Error en la respuesta de Supabase');
       }
-    }),
-    catchError(error => {
-      console.error('❌ Error actualizando estadísticas:', error);
-      return of({ success: false, error: error.message });
-    })
-  );
-}
+      
+    } else {
+      // Crear nuevas estadísticas
+      const newStats = {
+        user_id: userId,
+        games_played: Math.max(0, stats.games_played || 0),
+        games_won: Math.max(0, stats.games_won || 0),
+        total_turns: Math.max(0, stats.total_turns || 0),
+        last_played: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/player_stats`, {
+        method: "POST",
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${localStorage.getItem('access_token') || SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(newStats)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        return { success: true, result, created: true };
+      } else {
+        throw new Error('Error creando estadísticas');
+      }
+    }
+  } catch (error) {
+    console.log('Error actualizando estadísticas:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+
 
 // UN SOLO EXPORT AL FINAL
 export { 
@@ -418,9 +472,9 @@ export {
   createGame, 
   saveGameState, 
   getUserStats,
-  updateUserStatsObservable as updateUserStats,
   userSubject$,
   authChanges$,
+  SUPABASE_KEY,
   
   // Nuevas funciones con Observables
   fetchSupabaseObservable,

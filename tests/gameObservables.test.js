@@ -310,11 +310,11 @@ describe('gameObservables.js - RxJS Observables', () => {
       
       sub1.unsubscribe()
       
-      subject.next('C') // Solo S2 debería recibir
+      subject.next('C')
       
       sub2.unsubscribe()
       
-      subject.next('D') // Nadie debería recibir
+      subject.next('D')
       
       await new Promise(resolve => setTimeout(resolve, 10))
       
