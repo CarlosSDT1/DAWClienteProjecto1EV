@@ -114,9 +114,6 @@ function renderizarInterfaz() {
             <div class="text-center mt-4">
                 <button id="tirar-dado" class="btn btn-success btn-lg me-2">🎲 Tirar Dado</button>
                 <button id="pasar-turno" class="btn btn-info btn-lg me-2">⏭️ Pasar Turno</button>
-                <button id="guardar-partida" class="btn btn-secondary btn-lg me-2" title="Guardar partida actual">
-                    💾 Guardar
-                </button>
                 <button id="reiniciar" class="btn btn-primary btn-lg">🔄 Nueva Partida</button>
             </div>
 
