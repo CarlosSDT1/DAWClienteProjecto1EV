@@ -1,10 +1,14 @@
-// components/header.js - COMPLETO CON ROLES
+// components/header.js - COMPLETO CON ROLES Y ACCESO RESTRINGIDO (PERMITIENDO GUEST)
 import { getUserRole } from "../services/supaservice.js";
 
 export { renderHeader, setupHeaderEvents, updateHeader };
 
 function renderHeader() {
     const role = getUserRole();
+    const currentHash = window.location.hash || '#game';
+    
+    // Solo mostrar navegación para autenticados (usuarios O invitados)
+    const showNavigation = role === 'user' || role === 'guest';
     
     let userInfo = "";
     let dropdownMenu = "";
@@ -26,17 +30,15 @@ function renderHeader() {
         dropdownMenu = `
             <li><a class="dropdown-item" href="#login">Iniciar Sesión</a></li>
             <li><a class="dropdown-item" href="#register">Registrarse</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="#game">Jugar como Invitado</a></li>
         `;
     }
 
-    const currentHash = window.location.hash || '#game';
-    
     return `
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#game">Juego de la Oca</a>
+            <a class="navbar-brand" href="${showNavigation ? '#game' : '#login'}">Juego de la Oca</a>
+            
+            ${showNavigation ? `
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -54,17 +56,10 @@ function renderHeader() {
                             </a>
                         </li>
                     ` : ''}
-                    ${role === 'guest' ? `
-                    ` : ''}
-                    ${role === null ? `
-                        <li class="nav-item">
-                            <a class="nav-link ${currentHash === '#login' ? 'active' : ''}" href="#login">
-                                Iniciar Sesión
-                            </a>
-                        </li>
-                    ` : ''}
                 </ul>
-                <ul class="navbar-nav ms-auto">
+            ` : ''}
+            
+                <ul class="navbar-nav ${showNavigation ? 'ms-auto' : ''}">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span>${userInfo}</span>
@@ -74,7 +69,8 @@ function renderHeader() {
                         </ul>
                     </li>
                 </ul>
-            </div>
+            
+            ${showNavigation ? '</div>' : ''}
         </div>
     </nav>
     `;
@@ -91,6 +87,7 @@ function setupHeaderEvents() {
             localStorage.removeItem('refresh_token');
             localStorage.removeItem('user_id');
             localStorage.removeItem('user');
+            localStorage.removeItem('last_login');
             
             // Recargar página y redirigir al login
             window.location.href = window.location.origin + window.location.pathname + '#login';

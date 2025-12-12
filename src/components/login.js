@@ -1,4 +1,4 @@
-// components/login.js - COMPLETO CON LOGIN Y REGISTER
+// components/login.js - COMPLETO CON LOGIN Y REGISTER (CON BOTÓN DE INVITADO)
 import { login, register, userSubject$, getUserRole } from "../services/supaservice.js";
 import { fromEvent, combineLatest, of, merge } from 'rxjs';
 import { map, debounceTime, distinctUntilChanged, tap, filter, switchMap, catchError, startWith } from 'rxjs/operators';
@@ -7,6 +7,13 @@ export { renderLogin, checkIfAlreadyAuthenticated };
 
 const renderLogin = (method) => {
     const role = getUserRole();
+    
+    // Si ya está autenticado (usuario o invitado), redirigir automáticamente
+    if (role === 'user' || role === 'guest') {
+        window.location.hash = '#game';
+        return document.createElement('div'); // Devolver div vacío
+    }
+    
     const isGuest = role === 'guest';
     
     const formHTML = `
@@ -47,16 +54,14 @@ const renderLogin = (method) => {
                                 <button type="submit" class="btn btn-primary" id="submit-btn" disabled>
                                     ${method === 'login' ? 'Iniciar Sesión' : 'Registrarse'}
                                 </button>
-                                ${method === 'login' && !isGuest ? `
+                                ${method === 'login' ? `
                                 <button type="button" class="btn btn-outline-secondary" id="guestBtn">
                                     Jugar como Invitado
                                 </button>
                                 ` : ''}
-                                ${!isGuest ? `
                                 <a href="${method === 'login' ? '#register' : '#login'}" class="btn btn-link">
                                     ${method === 'login' ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia Sesión'}
                                 </a>
-                                ` : ''}
                             </div>
                             <div id="message" class="mt-3"></div>
                         </form>

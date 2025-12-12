@@ -1,4 +1,4 @@
-// main.js - REDIRECCIÓN MEJORADA
+// main.js - REDIRECCIÓN MEJORADA CON ACCESO RESTRINGIDO
 import "./scss/style.scss";
 import { router } from "./router";
 import { getUserRole } from "./services/supaservice.js";
@@ -22,9 +22,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const role = getUserRole();
         const hasSavedGame = localStorage.getItem('oca_game_state');
         
+        // REGLAS DE REDIRECCIÓN INICIAL:
         if (role === 'user' || role === 'guest' || hasSavedGame) {
             window.location.hash = '#game';
         } else {
+            // NO AUTENTICADO -> siempre a login
             window.location.hash = '#login';
         }
     }
