@@ -20,9 +20,6 @@ const userSubject$ = new BehaviorSubject(
 // Observable para cambios en la autenticación
 const authChanges$ = userSubject$.pipe(
   distinctUntilChanged((prev, curr) => JSON.stringify(prev) === JSON.stringify(curr)),
-  tap(user => {
-    console.log('🔐 Cambio en autenticación:', user ? (user.isGuest ? 'Invitado' : user.email) : 'No autenticado');
-  }),
   shareReplay(1)
 );
 
@@ -46,7 +43,6 @@ const headerFactory = ({
   return headers;
 }
 
-// Versión original (para compatibilidad)
 const fetchSupabase = async (url, options) => {
   try {
     const response = await fetch(url, options);
@@ -122,8 +118,6 @@ const login = (dataLogin) => {
         isGuest: false,
         lastLogin: new Date().toISOString()
       });
-      
-      console.log('✅ Login exitoso via rxjs');
     }),
     catchError(error => {
       console.error('❌ Error en login:', error);
@@ -140,10 +134,10 @@ const getSession = () => {
 const register = (dataRegister) => {
   return registerSupabase(dataRegister).pipe(
     tap(registerResponse => {
-      console.log('✅ Registro exitoso via rxjs:', registerResponse.email);
+      console.log('Registro exitoso via rxjs:', registerResponse.email);
     }),
     catchError(error => {
-      console.error('❌ Error en registro:', error);
+      console.error('Error en registro:', error);
       return throwError(() => error);
     })
   );
@@ -247,7 +241,7 @@ const saveGameStateObservable = (gameState) => {
   
   if (!userId) {
     localStorage.setItem('oca_game_state', JSON.stringify(gameState));
-    console.log('💾 Juego guardado localmente (sin usuario)');
+    console.log('Juego guardado localmente (sin usuario)');
     return of({ success: true, local: true });
   }
   
@@ -268,7 +262,7 @@ const saveGameStateObservable = (gameState) => {
       timestamp: new Date().toISOString()
     })),
     catchError(error => {
-      console.error('❌ Error guardando en Supabase, guardando localmente:', error);
+      console.error('Error guardando en Supabase, guardando localmente:', error);
       localStorage.setItem('oca_game_state', JSON.stringify(gameState));
       return of({ 
         success: true, 

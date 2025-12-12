@@ -175,7 +175,6 @@ function updateGamesList(container, games) {
     
     const role = getUserRole();
     
-    // SOLO USUARIOS pueden ver historial
     if (role !== 'user') {
         gamesList.innerHTML = `
             <div class="alert alert-info">

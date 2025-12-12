@@ -210,7 +210,7 @@ export function procesarInactividades(estado, jugadorId) {
             jugadoresInactivos.delete(jugadorId);
             delete jugador.tipoInactividad;
             delete jugador.turnosInactivo;
-            console.log(`✅ ${jugador.nombre} ha terminado su inactividad de ${tipoInactividad}`);
+            console.log(`${jugador.nombre} ha terminado su inactividad de ${tipoInactividad}`);
             return false; // Ya no está inactivo
         }
         

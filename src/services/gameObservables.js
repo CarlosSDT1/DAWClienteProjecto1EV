@@ -20,28 +20,28 @@ export const setupButtonObservables = () => {
       const guardarBtn = document.getElementById('guardar-partida');
       
       if (!tirarDadoBtn || !pasarTurnoBtn || !reiniciarBtn) {
-        console.warn('⚠️ Botones no encontrados, reintentando en 500ms');
+        console.warn('Botones no encontrados, reintentando en 500ms');
         return of(null);
       }
       
       const tirarDadoClick$ = fromEvent(tirarDadoBtn, 'click').pipe(
         debounceTime(300),
-        tap(() => console.log('🎲 Botón tirar dado clickeado'))
+        tap(() => console.log('Botón tirar dado clickeado'))
       );
       
       const pasarTurnoClick$ = fromEvent(pasarTurnoBtn, 'click').pipe(
         debounceTime(300),
-        tap(() => console.log('⏭️ Botón pasar turno clickeado'))
+        tap(() => console.log('Botón pasar turno clickeado'))
       );
       
       const reiniciarClick$ = fromEvent(reiniciarBtn, 'click').pipe(
         debounceTime(300),
-        tap(() => console.log('🔄 Botón reiniciar clickeado'))
+        tap(() => console.log('Botón reiniciar clickeado'))
       );
       
       const guardarClick$ = guardarBtn ? fromEvent(guardarBtn, 'click').pipe(
         debounceTime(300),
-        tap(() => console.log('💾 Botón guardar clickeado'))
+        tap(() => console.log('Botón guardar clickeado'))
       ) : of(null).pipe(filter(() => false));
       
       return merge(
@@ -53,7 +53,7 @@ export const setupButtonObservables = () => {
     }),
     filter(event => event !== null),
     catchError(error => {
-      console.error('❌ Error en setupButtonObservables:', error);
+      console.error('Error en setupButtonObservables:', error);
       return of(null).pipe(filter(() => false));
     })
   );
@@ -80,7 +80,6 @@ export const keyPresses$ = fromEvent(document, 'keydown').pipe(
     timestamp: new Date().toISOString()
   })),
   tap(key => {
-    console.log('⌨️ Tecla presionada:', key.key);
   })
 );
 
@@ -91,7 +90,7 @@ export const userInteractions$ = merge(
 ).pipe(
   filter(event => event !== null),
   tap(interaction => {
-    console.log('👤 Interacción del usuario:', interaction.type);
+    console.log('Interacción del usuario:', interaction.type);
   })
 );
 
@@ -124,7 +123,7 @@ export const getGameStats$ = () => {
 
 // Suscripción automática para logs de eventos
 const eventLogSubscription = gameEvents$.subscribe(event => {
-  console.log('📢 Evento de juego:', event.type, {
+  console.log('Evento de juego:', event.type, {
     playerId: event.playerId,
     timestamp: event.timestamp
   });
@@ -135,16 +134,16 @@ export const initGameObservables = () => {
   // Configurar suscripción a interacciones
   const interactionsSub = userInteractions$.subscribe(interaction => {
     if (interaction.type === 'BUTTON_CLICK') {
-      console.log(`🖱️ Botón ${interaction.button} clickeado via rxjs`);
+      console.log(`Botón ${interaction.button} clickeado via rxjs`);
     }
   });
   
-  console.log('✅ Observables de juego inicializados con rxjs');
+  console.log('Observables de juego inicializados con rxjs');
   
   return () => {
     eventLogSubscription.unsubscribe();
     interactionsSub.unsubscribe();
-    console.log('✅ Observables limpiados');
+    console.log('Observables limpiados');
   };
 };
 

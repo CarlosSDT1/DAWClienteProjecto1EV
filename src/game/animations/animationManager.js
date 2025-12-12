@@ -2,11 +2,7 @@
 import { dibujarTableroCompleto } from '../ui/boardRenderer.js';
 
 export function animarMovimiento(jugador, desde, hasta, callback, estado) {
-    console.log('animarMovimiento:', {
-        jugador: jugador.nombre,
-        desde: desde,
-        hasta: hasta
-    });
+    
     
     const pasos = Math.abs(hasta - desde);
     const direccion = hasta > desde ? 1 : -1;

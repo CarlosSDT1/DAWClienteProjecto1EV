@@ -31,11 +31,10 @@ let estado;
 let cleanupObservables;
 
 export function iniciarJuego() {
-    console.log('🎮 Iniciando juego con rxjs...');
+
     
     // Cargar automáticamente si hay partida guardada
     if (hayPartidaEnCurso()) {
-        console.log('🔍 Detectada partida guardada, cargando automáticamente...');
         estado = createInitialState();
         mostrarMensaje('✅ Partida anterior cargada automáticamente', 'success');
     } else {
@@ -74,7 +73,6 @@ export function iniciarJuego() {
     cleanupObservables = () => {
         if (originalCleanup) originalCleanup();
         if (saveSubscription) saveSubscription.unsubscribe();
-        console.log('🧹 Todas las suscripciones limpiadas');
     };
     
     return cleanupObservables;
@@ -307,7 +305,6 @@ function configurarSuscripcionesReactivas() {
     
     // Suscripción a todas las interacciones del usuario
     const interactionsSubscription = userInteractions$.subscribe(interaction => {
-        console.log('👤 Interacción registrada via rxjs:', interaction.type || interaction.button);
     });
     
     // Suscripción a estadísticas del juego
@@ -333,7 +330,7 @@ function configurarSuscripcionesReactivas() {
         playerSubscription.unsubscribe();
         interactionsSubscription.unsubscribe();
         statsSubscription.unsubscribe();
-        console.log('✅ Todas las suscripciones reactivas limpiadas');
+
     };
 }
 

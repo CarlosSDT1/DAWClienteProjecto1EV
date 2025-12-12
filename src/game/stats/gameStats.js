@@ -90,7 +90,7 @@ export function mostrarTablaPosiciones(jugadores) {
     const tablaPosicionesElement = document.getElementById('tabla-posiciones');
     if (tablaPosicionesElement) {
         tablaPosicionesElement.style.display = 'block';
-        tablaPosicionesElement.querySelector('h3').textContent = '🏆 Resultados Finales de la Partida 🏆';
+        tablaPosicionesElement.querySelector('h3').textContent = ' Resultados Finales de la Partida ';
     }
 }
 

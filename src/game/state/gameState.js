@@ -9,12 +9,11 @@ export function createInitialState() {
     const savedState = cargarEstadoGuardado();
     
     if (savedState) {
-        console.log('✅ Estado de juego cargado automáticamente');
         return restaurarEstado(savedState);
     }
     
     // Crear nuevo estado si no hay guardado
-    console.log('🆕 Creando nuevo estado de juego');
+
     return {
         jugadorActual: 1,
         jugadores: crearJugadoresIniciales(),
@@ -51,11 +50,9 @@ export function guardarEstado(estado) {
         
         // Guardar en localStorage (persistente)
         localStorage.setItem(STORAGE_KEY, JSON.stringify(estadoParaGuardar));
-        
-        console.log('💾 Estado guardado automáticamente');
         return true;
     } catch (error) {
-        console.error('❌ Error guardando estado:', error);
+        console.error('Error guardando estado:', error);
         return false;
     }
 }
@@ -75,23 +72,20 @@ function cargarEstadoGuardado() {
             
             // Si el estado tiene más de 24 horas, ignorarlo
             if (horasDiferencia > 24) {
-                console.log('🗑️ Estado demasiado viejo, descartando automáticamente');
                 limpiarEstadoGuardado();
                 return null;
             }
             
             // Verificar que tenga la estructura básica
             if (!parsedState.jugadores || !parsedState.jugadorActual) {
-                console.log('🗑️ Estado corrupto, descartando automáticamente');
                 limpiarEstadoGuardado();
                 return null;
             }
             
-            console.log('📂 Estado cargado automáticamente desde almacenamiento');
             return parsedState;
         }
     } catch (error) {
-        console.error('❌ Error cargando estado guardado:', error);
+        console.error('Error cargando estado guardado:', error);
         limpiarEstadoGuardado();
     }
     
@@ -124,7 +118,6 @@ function restaurarEstado(savedState) {
 // Limpiar estado guardado
 export function limpiarEstadoGuardado() {
     localStorage.removeItem(STORAGE_KEY);
-    console.log('🧹 Estado guardado limpiado');
 }
 
 // Verificar si hay partida en curso
