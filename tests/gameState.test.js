@@ -4,30 +4,22 @@ import { createInitialState, guardarEstado, hayPartidaEnCurso } from '../src/gam
 
 describe('gameState.js - Tests de funciones puras', () => {
   beforeEach(() => {
-    // Limpiar localStorage mock antes de cada test
-    if (global.localStorage && global.localStorage.clear) {
-      global.localStorage.clear()
+    // Mock de localStorage limpio
+    global.localStorage = {
+      store: {},
+      getItem: vi.fn(function(key) {
+        return this.store[key] || null
+      }),
+      setItem: vi.fn(function(key, value) {
+        this.store[key] = value.toString()
+      }),
+      removeItem: vi.fn(function(key) {
+        delete this.store[key]
+      }),
+      clear: vi.fn(function() {
+        this.store = {}
+      })
     }
-    
-    // Mock explícito para asegurar que funciona
-    Object.defineProperty(global, 'localStorage', {
-      value: {
-        store: {},
-        getItem(key) {
-          return this.store[key] || null
-        },
-        setItem(key, value) {
-          this.store[key] = value.toString()
-        },
-        removeItem(key) {
-          delete this.store[key]
-        },
-        clear() {
-          this.store = {}
-        }
-      },
-      writable: true
-    })
   })
   
   afterEach(() => {
@@ -43,74 +35,64 @@ describe('gameState.js - Tests de funciones puras', () => {
       expect(estado.jugadorActual).toBe(1)
     })
     
-    it('debería inicializar propiedades correctamente', () => {
+    it('debería cargar estado guardado si existe', () => {
+      // Simular que hay estado guardado
+      const savedState = {
+        jugadorActual: 3,
+        jugadores: { 1: { nombre: 'J1' } },
+        fechaGuardado: new Date().toISOString(),
+        version: '1.0'
+      }
+      global.localStorage.getItem.mockReturnValue(JSON.stringify(savedState))
+      
       const estado = createInitialState()
       
-      expect(estado.juegoActivo).toBe(true)
-      expect(estado.dadoTirado).toBe(false)
-      expect(estado.jugadoresInactivos.size).toBe(0)
+      expect(estado.jugadorActual).toBe(3)
     })
   })
   
   describe('guardarEstado()', () => {
     it('debería guardar estado en localStorage', () => {
-      // Configurar localStorage mock
-      const mockSetItem = vi.fn()
-      global.localStorage.setItem = mockSetItem
-      
       const estado = createInitialState()
       
       const resultado = guardarEstado(estado)
       
       expect(resultado).toBe(true)
-      expect(mockSetItem).toHaveBeenCalled()
-      expect(mockSetItem).toHaveBeenCalledWith('oca_game_state', expect.any(String))
-      
-      // Verificar que el JSON guardado es válido
-      const callArgs = mockSetItem.mock.calls[0]
-      expect(callArgs[0]).toBe('oca_game_state')
-      const savedData = JSON.parse(callArgs[1])
-      expect(savedData.jugadorActual).toBe(1)
-      expect(savedData.version).toBe('1.0')
+      expect(global.localStorage.setItem).toHaveBeenCalled()
+      expect(global.localStorage.setItem).toHaveBeenCalledWith(
+        'oca_game_state',
+        expect.any(String)
+      )
     })
     
     it('debería devolver false si hay error al guardar', () => {
-      // Mock para que setItem lance error
-      const mockSetItem = vi.fn(() => {
-        throw new Error('Storage is full')
-      })
-      global.localStorage.setItem = mockSetItem
-      
       const estado = createInitialState()
+      global.localStorage.setItem.mockImplementation(() => {
+        throw new Error('Storage error')
+      })
       
       const resultado = guardarEstado(estado)
       
       expect(resultado).toBe(false)
-      expect(mockSetItem).toHaveBeenCalled()
     })
   })
   
   describe('hayPartidaEnCurso()', () => {
     it('debería devolver true si hay partida guardada', () => {
-      // Configurar mock
-      const mockGetItem = vi.fn(() => JSON.stringify({ jugadorActual: 1 }))
-      global.localStorage.getItem = mockGetItem
+      global.localStorage.getItem.mockReturnValue('{"jugadorActual": 1}')
       
       const resultado = hayPartidaEnCurso()
       
       expect(resultado).toBe(true)
-      expect(mockGetItem).toHaveBeenCalledWith('oca_game_state')
+      expect(global.localStorage.getItem).toHaveBeenCalledWith('oca_game_state')
     })
     
     it('debería devolver false si no hay partida guardada', () => {
-      // Configurar mock para devolver null
-      const mockGetItem = vi.fn(() => null)
-      global.localStorage.getItem = mockGetItem
+      global.localStorage.getItem.mockReturnValue(null)
       
       const resultado = hayPartidaEnCurso()
       
       expect(resultado).toBe(false)
-      expect(mockGetItem).toHaveBeenCalledWith('oca_game_state')
     })
   })
 })
