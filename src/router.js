@@ -1,8 +1,6 @@
 // router.js - VERSIÓN SIMPLIFICADA
 import { iniciarJuego } from "./game/juego.js";
-import { getSession } from "./services/supaservice.js";
-
-// Importar los componentes
+import { getUserRole, canAccessStats, canAccessGame } from "./services/supaservice.js";
 import "./components/login.js";
 import "./components/stats.js";
 
@@ -21,43 +19,57 @@ function renderGame() {
     return document.createElement('div');
 }
 
-function checkAuth(route) {
-    const userId = getSession();
-    const isGuest = localStorage.getItem('guestMode') === 'true';
+function checkAccess(route) {
+    const role = getUserRole();
     const partidaGuardada = localStorage.getItem('oca_game_state');
     
-    // Si hay partida guardada, permitir siempre ir al juego
-    if (route === '#game' && partidaGuardada) {
-        return true;
+    // Reglas de acceso
+    switch(route) {
+        case '#game':
+            // Juego: usuarios e invitados
+            return role === 'user' || role === 'guest' || partidaGuardada;
+            
+        case '#stats':
+            // Estadísticas: solo usuarios
+            return role === 'user';
+            
+        case '#login':
+            // Login: invitados y no autenticados pueden acceder
+            return role === 'guest' || role === null;
+            
+        case '#register':
+            // Register: solo no autenticados
+            return role === null;
+            
+        default:
+            return true;
     }
-    
-    // Rutas que requieren autenticación
-    const protectedRoutes = ['#game', '#stats'];
-    const authRoutes = ['#login', '#register'];
-    
-    // Si está en ruta protegida y no está autenticado
-    if (protectedRoutes.includes(route) && !userId && !isGuest && !partidaGuardada) {
-        window.location.hash = '#login';
-        return false;
-    }
-    
-    // Si está en ruta de auth y ya está autenticado
-    if (authRoutes.includes(route) && (userId || isGuest)) {
-        window.location.hash = '#game';
-        return false;
-    }
-    
-    return true;
 }
 
 function router(route, container) {
-    // Si no hay hash, usar '#game'
     if (route === '') {
         route = '#game';
     }
     
-    // Verificar autenticación
-    if (!checkAuth(route)) {
+    // Verificar acceso
+    if (!checkAccess(route)) {
+        // Redirigir según rol
+        const role = getUserRole();
+        
+        if (role === 'guest') {
+            // Invitado intentando acceder a stats -> redirigir a juego
+            if (route === '#stats') {
+                window.location.hash = '#game';
+                return;
+            }
+        } else if (role === null) {
+            // No autenticado -> redirigir a login
+            window.location.hash = '#login';
+            return;
+        }
+        
+        // Por defecto, redirigir a juego
+        window.location.hash = '#game';
         return;
     }
     

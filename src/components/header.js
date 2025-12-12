@@ -1,35 +1,38 @@
-// components/header.js
-import { userSubject$, getSession } from "../services/supaservice.js";
+// components/header.js - COMPLETO CON ROLES
+import { getUserRole } from "../services/supaservice.js";
 
-export { renderHeader, setupHeaderEvents };
+export { renderHeader, setupHeaderEvents, updateHeader };
 
 function renderHeader() {
-    const userId = getSession();
-    const isGuest = localStorage.getItem('guestMode') === 'true';
+    const role = getUserRole();
     
-    let userInfo = "🎮 Invitado";
-    let dropdownMenu = `
-        <li><a class="dropdown-item" href="#login">Iniciar Sesión</a></li>
-        <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item" href="#game">Jugar como Invitado</a></li>
-    `;
+    let userInfo = "";
+    let dropdownMenu = "";
     
-    if (userId) {
-        userInfo = "Jugador";
+    if (role === 'user') {
+        userInfo = "Usuario";
         dropdownMenu = `
             <li><a class="dropdown-item" href="#stats">Estadísticas</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="#" id="logoutBtn">Cerrar Sesión</a></li>
         `;
-    } else if (isGuest) {
+    } else if (role === 'guest') {
         userInfo = "Invitado";
         dropdownMenu = `
+            <li><a class="dropdown-item" href="#" id="exitGuestBtn">Salir del modo Invitado</a></li>
+        `;
+    } else {
+        userInfo = "No autenticado";
+        dropdownMenu = `
             <li><a class="dropdown-item" href="#login">Iniciar Sesión</a></li>
+            <li><a class="dropdown-item" href="#register">Registrarse</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="#" id="logoutBtn">Salir del modo Invitado</a></li>
+            <li><a class="dropdown-item" href="#game">Jugar como Invitado</a></li>
         `;
     }
 
+    const currentHash = window.location.hash || '#game';
+    
     return `
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
@@ -40,17 +43,26 @@ function renderHeader() {
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link ${window.location.hash === '#game' || window.location.hash === '' ? 'active' : ''}" href="#game">Juego</a>
+                        <a class="nav-link ${currentHash === '#game' || currentHash === '' ? 'active' : ''}" href="#game">
+                            Juego
+                        </a>
                     </li>
-                    ${userId || isGuest ? '' : `
+                    ${role === 'user' ? `
                         <li class="nav-item">
-                            <a class="nav-link ${window.location.hash === '#login' ? 'active' : ''}" href="#login">Iniciar Sesión</a>
+                            <a class="nav-link ${currentHash === '#stats' ? 'active' : ''}" href="#stats">
+                                Estadísticas
+                            </a>
                         </li>
-                    `}
-                    <li class="nav-item">
-                        <a class="nav-link ${window.location.hash === '#stats' ? 'active' : ''}" href="#stats">Estadísticas</a>
-                    </li>
-                    
+                    ` : ''}
+                    ${role === 'guest' ? `
+                    ` : ''}
+                    ${role === null ? `
+                        <li class="nav-item">
+                            <a class="nav-link ${currentHash === '#login' ? 'active' : ''}" href="#login">
+                                Iniciar Sesión
+                            </a>
+                        </li>
+                    ` : ''}
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item dropdown">
@@ -69,17 +81,28 @@ function renderHeader() {
 }
 
 // Función para manejar eventos del header
- function setupHeaderEvents() {
+function setupHeaderEvents() {
     document.addEventListener('click', (e) => {
         if (e.target.id === 'logoutBtn') {
             e.preventDefault();
             
-            // Limpiar localStorage
+            // Limpiar localStorage para usuario
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
             localStorage.removeItem('user_id');
             localStorage.removeItem('user');
+            
+            // Recargar página y redirigir al login
+            window.location.href = window.location.origin + window.location.pathname + '#login';
+            window.location.reload();
+        }
+        
+        if (e.target.id === 'exitGuestBtn') {
+            e.preventDefault();
+            
+            // Limpiar modo invitado
             localStorage.removeItem('guestMode');
+            localStorage.removeItem('guest_since');
             
             // Recargar página y redirigir al login
             window.location.href = window.location.origin + window.location.pathname + '#login';
@@ -89,7 +112,7 @@ function renderHeader() {
 }
 
 // Función para actualizar el header dinámicamente
-export function updateHeader() {
+function updateHeader() {
     const headerElement = document.querySelector('game-header');
     if (headerElement) {
         headerElement.innerHTML = renderHeader();
@@ -98,6 +121,7 @@ export function updateHeader() {
 }
 
 // Suscribirse a cambios en el usuario para actualizar el header
+import { userSubject$ } from "../services/supaservice.js";
 userSubject$.subscribe(() => {
     updateHeader();
 });

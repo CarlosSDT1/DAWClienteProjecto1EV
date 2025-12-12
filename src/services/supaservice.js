@@ -454,7 +454,30 @@ export const updateUserStats = async (stats) => {
   }
 };
 
+// services/supaservice.js - AÑADIR AL FINAL
+export const ROLES = {
+    USER: 'user',
+    GUEST: 'guest'
+};
 
+export function getUserRole() {
+    const userId = getSession();
+    const isGuest = localStorage.getItem('guestMode') === 'true';
+    
+    if (userId) return ROLES.USER;
+    if (isGuest) return ROLES.GUEST;
+    return null; // No autenticado
+}
+
+export function canAccessStats() {
+    const role = getUserRole();
+    return role === ROLES.USER; // Solo usuarios pueden ver estadísticas
+}
+
+export function canAccessGame() {
+    const role = getUserRole();
+    return role === ROLES.USER || role === ROLES.GUEST; // Ambos pueden jugar
+}
 
 // UN SOLO EXPORT AL FINAL
 export { 

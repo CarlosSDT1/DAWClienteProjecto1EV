@@ -1,4 +1,4 @@
-// components/stats.js - SIN ESTADÍSTICAS DE TURNOS
+// components/stats.js - COMPLETO CON CONTROL DE ACCESO
 import { fromEvent } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import {
@@ -9,6 +9,7 @@ import {
     addManualGame,
     resetAllStats
 } from "../services/statsService.js";
+import { getUserRole } from "../services/supaservice.js";
 
 export { renderStats, GameStats };
 
@@ -133,13 +134,19 @@ function updateStatsContent(container, stats) {
     const statsContent = container.querySelector('#stats-content');
     if (!statsContent) return;
     
-    const userId = localStorage.getItem('user_id');
-    const isGuest = localStorage.getItem('guestMode') === 'true';
+    const role = getUserRole();
     
-    if (!userId && !isGuest) {
+    // SOLO USUARIOS pueden ver estadísticas
+    if (role !== 'user') {
         statsContent.innerHTML = `
-            <p>Inicia sesión para ver estadísticas.</p>
-            <a href="#login" class="btn btn-primary btn-sm">Iniciar Sesión</a>
+            <div class="alert alert-warning">
+                <h6>🔒 Acceso restringido</h6>
+                <p>Las estadísticas solo están disponibles para usuarios registrados.</p>
+                <div class="mt-2">
+                    <a href="#login" class="btn btn-primary btn-sm me-2">Iniciar Sesión</a>
+                    <a href="#game" class="btn btn-secondary btn-sm">Volver al Juego</a>
+                </div>
+            </div>
         `;
         return;
     }
@@ -147,7 +154,7 @@ function updateStatsContent(container, stats) {
     if (!stats) {
         statsContent.innerHTML = `
             <p>No hay estadísticas disponibles.</p>
-            ${isGuest ? '<p><small>Juega una partida para comenzar</small></p>' : ''}
+            <p><small>Juega una partida para comenzar a registrar estadísticas</small></p>
         `;
         return;
     }
@@ -159,7 +166,6 @@ function updateStatsContent(container, stats) {
         <p><strong>Victorias:</strong> ${won}</p>
         <p><strong>Derrotas:</strong> ${lost}</p>
         <p><strong>Ratio de victorias:</strong> ${percentage}%</p>
-        ${isGuest ? '<p><small>Modo invitado</small></p>' : ''}
     `;
 }
 
@@ -167,18 +173,23 @@ function updateGamesList(container, games) {
     const gamesList = container.querySelector('#games-list');
     if (!gamesList) return;
     
-    const userId = localStorage.getItem('user_id');
-    const isGuest = localStorage.getItem('guestMode') === 'true';
+    const role = getUserRole();
     
-    if (!userId && !isGuest) {
-        gamesList.innerHTML = '<p>Inicia sesión para ver historial.</p>';
+    // SOLO USUARIOS pueden ver historial
+    if (role !== 'user') {
+        gamesList.innerHTML = `
+            <div class="alert alert-info">
+                <p>El historial de partidas solo está disponible para usuarios registrados.</p>
+                <a href="#login" class="btn btn-primary btn-sm">Iniciar Sesión para ver historial</a>
+            </div>
+        `;
         return;
     }
     
     if (!games || games.length === 0) {
         gamesList.innerHTML = `
             <p>No hay partidas registradas.</p>
-            ${isGuest ? '<p><small>Juega una partida o añade una manualmente</small></p>' : ''}
+            <p><small>Juega una partida o añade una manualmente</small></p>
         `;
         return;
     }
@@ -196,7 +207,7 @@ function updateGamesList(container, games) {
         const resultado = userWon ? '✅ Victoria' : '❌ Derrota';
         
         html += `
-            <li class="list-group-item" data-game-id="${gameId}" data-is-guest="${isGuest}">
+            <li class="list-group-item" data-game-id="${gameId}" data-is-guest="false">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <strong>${date}</strong>
@@ -232,10 +243,9 @@ function updateGamesList(container, games) {
             ).subscribe(() => {
                 const listItem = button.closest('li');
                 const gameId = listItem.getAttribute('data-game-id');
-                const isGuest = listItem.getAttribute('data-is-guest') === 'true';
                 
                 if (confirm('¿Borrar esta partida del historial?')) {
-                    deleteGame(gameId, isGuest).then(result => {
+                    deleteGame(gameId, false).then(result => {
                         if (result.success) {
                             showToast('✅ Partida eliminada', 'success');
                         } else {
@@ -252,10 +262,9 @@ function updateGamesList(container, games) {
             ).subscribe(() => {
                 const listItem = button.closest('li');
                 const gameId = listItem.getAttribute('data-game-id');
-                const isGuest = listItem.getAttribute('data-is-guest') === 'true';
                 
                 if (confirm('¿Cambiar el resultado de esta partida?')) {
-                    toggleGameResult(gameId, isGuest).then(result => {
+                    toggleGameResult(gameId, false).then(result => {
                         if (result.success) {
                             showToast('✅ Resultado cambiado', 'success');
                         } else {
