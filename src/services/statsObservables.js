@@ -176,7 +176,7 @@ export function deleteGame$(gameId, isGuest) {
                 }
                 // Si no es 204, intentar parsear la respuesta normalmente
                 return from(response.json()).pipe(
-                    map(data => ({ success: true, wasVictory: false }))
+                    map(() => ({ success: true, wasVictory: false }))
                 );
             }
             // Si hay error en la respuesta

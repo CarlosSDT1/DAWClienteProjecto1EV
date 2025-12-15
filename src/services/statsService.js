@@ -154,7 +154,7 @@ export async function toggleGameResult(gameId, isGuest) {
             );
             
             if (!getResponse.ok) {
-                throw new Error(`Error ${response.status}`);
+                throw new Error(`Error ${getResponse.status}`);
             }
             
             const gameData = await getResponse.json();
@@ -188,7 +188,7 @@ export async function toggleGameResult(gameId, isGuest) {
             );
             
             if (!updateResponse.ok) {
-                throw new Error(`Error ${response.status}`);
+                throw new Error(`Error ${updateResponse.status}`);
             }
             
             // Recargar lista

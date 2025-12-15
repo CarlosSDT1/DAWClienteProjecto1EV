@@ -17,8 +17,7 @@ const routes = new Map([
 let currentRoute = '';
 let gameInitialized = false;
 
-function renderGame(container) {
-    // Si ya está inicializado, limpiar primero
+function renderGame() {
     if (gameInitialized) {
         limpiarJuego();
         gameInitialized = false;
@@ -27,27 +26,22 @@ function renderGame(container) {
     iniciarJuego();
     gameInitialized = true;
     
-    // El juego se renderiza directamente en #app
-    // No necesitamos devolver un elemento
 }
 
 function checkAccess(route) {
     const role = getUserRole();
     const partidaGuardada = localStorage.getItem('oca_game_state');
     
-    // REGLAS DE ACCESO:
     switch(route) {
         case '#game':
-            // Juego: usuarios, invitados, o con partida guardada
             return role === 'user' || role === 'guest' || partidaGuardada;
             
         case '#stats':
-            // Estadísticas: SOLO usuarios
+
             return role === 'user';
             
         case '#login':
         case '#register':
-            // Login y Register: SOLO no autenticados
             return role === null;
             
         default:

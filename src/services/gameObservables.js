@@ -1,5 +1,5 @@
 // services/gameObservables.js - VERSIÓN SIMPLIFICADA Y FUNCIONAL
-import { BehaviorSubject, Subject, combineLatest, fromEvent, interval, merge, of } from 'rxjs';
+import { BehaviorSubject, Subject, combineLatest, fromEvent, merge, of } from 'rxjs';
 import { map, filter, tap, debounceTime, distinctUntilChanged, shareReplay, switchMap, catchError } from 'rxjs/operators';
 
 // Subject para eventos de juego
@@ -79,7 +79,7 @@ export const keyPresses$ = fromEvent(document, 'keydown').pipe(
     code: event.code,
     timestamp: new Date().toISOString()
   })),
-  tap(key => {
+  tap(() => {
   })
 );
 

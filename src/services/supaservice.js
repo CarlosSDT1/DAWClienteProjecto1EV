@@ -44,16 +44,12 @@ const headerFactory = ({
 }
 
 const fetchSupabase = async (url, options) => {
-  try {
-    const response = await fetch(url, options);
-    if (response.ok) {
-      const data = await response.json();
-      return data;
-    } else {
-      const error = await response.json();
-      throw error;
-    }
-  } catch (error) {
+  const response = await fetch(url, options);
+  if (response.ok) {
+    const data = await response.json();
+    return data;
+  } else {
+    const error = await response.json();
     throw error;
   }
 }
@@ -333,43 +329,6 @@ const getUserStatsObservable = () => {
   );
 }
 
-const incrementUserStats = async (statsToUpdate) => {
-  const userId = getSession();
-  if (!userId) return null;
-  
-  // Obtener estadísticas actuales
-  const currentStats = await getUserStats();
-  
-  if (currentStats) {
-    // Incrementar valores existentes
-    const updatedStats = {
-      games_played: (currentStats.games_played || 0) + (statsToUpdate.games_played || 0),
-      games_won: (currentStats.games_won || 0) + (statsToUpdate.games_won || 0),
-      total_turns: (currentStats.total_turns || 0) + (statsToUpdate.total_turns || 0),
-      last_played: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    
-    return await updateData("player_stats", currentStats.id, updatedStats);
-  } else {
-    // Crear nuevas estadísticas
-    const newStats = {
-      user_id: userId,
-      games_played: statsToUpdate.games_played || 0,
-      games_won: statsToUpdate.games_won || 0,
-      total_turns: statsToUpdate.total_turns || 0,
-      last_played: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    
-    return await fetchSupabase(`${SUPABASE_URL}/rest/v1/player_stats`, {
-      method: "POST",
-      headers: headerFactory({ Prefer: "return=representation" }),
-      body: JSON.stringify(newStats)
-    });
-  }
-}
 
 // Versión con Observable
 export const updateUserStats = async (stats) => {

@@ -1,8 +1,7 @@
-// game/specialCells/specialCells.js - LOGICA CORREGIDA
+
 export function procesarCasillaEspecial(jugador, estado) {
-    // Destructuring - per accedir directament a les propietats
-    const { posicion, nombre, id } = jugador; // <-- DESTRUCTURING AFEGIT
-    const { tablero, jugadoresInactivos } = estado; // <-- DESTRUCTURING AFEGIT
+    const { posicion } = jugador; // <-- DESTRUCTURING
+    const { tablero } = estado; // <-- DESTRUCTURING
     
     console.log('Procesando casilla especial:', posicion);
     

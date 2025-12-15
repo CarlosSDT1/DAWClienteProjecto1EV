@@ -1,15 +1,14 @@
 // game/juego.js - COMPLETO CON IMPORTS CORREGIDOS
 import { createInitialState, guardarEstado, limpiarEstadoGuardado, hayPartidaEnCurso } from './state/gameState.js';
-import { siguienteTurno, actualizarPosiciones, actualizarEstadosJugadores } from './players/playerManager.js';
+import { siguienteTurno, actualizarPosiciones } from './players/playerManager.js';
 import { tirarDado, formatearResultadoDado } from './dice/diceManager.js';
 import { 
     procesarCasillaEspecial, 
-    liberarDelPozo,
     procesarInactividades,
     verificarLiberacionesDelPozo 
 } from './specialCells/specialCells.js';
 import { animarMovimiento } from './animations/animationManager.js';
-import { actualizarInfoTurno, mostrarMensaje, mostrarResultadoDado, actualizarInfoCarrera } from './ui/gameUI.js';
+import { mostrarMensaje, mostrarResultadoDado } from './ui/gameUI.js';
 import { calcularPosicionesFinales, mostrarTablaPosiciones, guardarEstadisticasJuego } from './stats/gameStats.js';
 import { dibujarTableroCompleto } from './ui/boardRenderer.js';
 
@@ -25,7 +24,7 @@ import {
 } from '../services/gameObservables.js';
 
 import { fromEvent } from 'rxjs';
-import { filter, tap, debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
+import { filter, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 let estado;
 let cleanupObservables;
@@ -303,13 +302,13 @@ function configurarSuscripcionesReactivas() {
     });
     
     // Suscripción a todas las interacciones del usuario
-    const interactionsSubscription = userInteractions$.subscribe(interaction => {
+    const interactionsSubscription = userInteractions$.subscribe(() => {
     });
     
     // Suscripción a estadísticas del juego
     const statsSubscription = getGameStats$().pipe(
         debounceTime(500)
-    ).subscribe(stats => {
+    ).subscribe(() => {
         // Actualizar turnos de jugadores
         if (estado && estado.jugadores) {
             Object.values(estado.jugadores).forEach(jugador => {

@@ -120,14 +120,14 @@ export function guardarEstadisticasJuego(estado) {
   };
   
   if (userId) {
-    saveGameState(gameData).then(result => {
+    saveGameState(gameData).then(() => {
       console.log("Partida guardada en Supabase");
       
       // Actualizar estadísticas
       updateUserStats({
         games_played: 1,
         games_won: userWon ? 1 : 0,
-        total_turns: 0  // ← Ya no usamos total_turns
+        total_turns: 0  //
       }).then(() => {
         console.log("Estadísticas actualizadas");
       }).catch(error => {

@@ -1,7 +1,7 @@
 // components/login.js - COMPLETO CON LOGIN Y REGISTER (CON BOTÓN DE INVITADO)
-import { login, register, userSubject$, getUserRole } from "../services/supaservice.js";
-import { fromEvent, combineLatest, of, merge } from 'rxjs';
-import { map, debounceTime, distinctUntilChanged, tap, filter, switchMap, catchError, startWith } from 'rxjs/operators';
+import { login, register, getUserRole } from "../services/supaservice.js";
+import { fromEvent, combineLatest, of } from 'rxjs';
+import { map, debounceTime, distinctUntilChanged, tap, switchMap, catchError, startWith } from 'rxjs/operators';
 
 export { renderLogin, checkIfAlreadyAuthenticated };
 
@@ -214,7 +214,7 @@ const renderLogin = (method) => {
                 }))
             );
         }),
-        tap(({ success, response, error }) => {
+        tap(({ success, error }) => {
             if (success) {
                 if (method === "login") {
                     messageDiv.innerHTML = '<div class="alert alert-success">¡Inicio de sesión exitoso! Redirigiendo...</div>';
@@ -282,15 +282,6 @@ const renderLogin = (method) => {
         );
     }
 
-    // Combinar todos los observables
-    const allObservables$ = merge(
-        emailValidation$,
-        passwordValidation$,
-        confirmPasswordValidation$,
-        formValidity$,
-        formSubmit$,
-        guestClick$
-    );
 
     // Iniciar suscripciones
     const subscriptions = [
