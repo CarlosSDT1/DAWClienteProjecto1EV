@@ -107,11 +107,11 @@ Guardado automático: La partida se guarda automáticamente cada vez que hay cam
 
 Errores Conocidos
 Error de Bloqueo Permanente en Casillas Especiales
-Descripción del problema: Cuando un jugador cae en las casillas de Posada (casilla 19), Pozo (casilla 31) o Cárcel (casilla 52), la ficha puede quedar permanentemente bloqueada y no recuperar su turno.
+Descripción del problema: Cuando un jugador cae en las casillas Pozo (casilla 31) o Cárcel (casilla 52), la ficha puede quedar permanentemente bloqueada y no recuperar su turno.
 
 Casos específicos:
 
-Posada (casilla 19): El jugador debería perder solo 1 turno, pero queda bloqueado indefinidamente.
+Posada (casilla 19): El jugador debería perder solo 1 turno, pero no pierde ninguno.
 
 Pozo (casilla 31): El jugador debería quedar inactivo hasta que otro jugador pase por la misma casilla, pero la liberación no funciona desde que lo hize reactivo.
 
