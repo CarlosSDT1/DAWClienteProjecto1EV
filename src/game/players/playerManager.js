@@ -40,9 +40,9 @@ export function actualizarPosiciones(estado) {
             if (estado.jugadores[jugadorId].terminado) {
                 estadoElement.innerHTML = `<span class="badge bg-success">🥇 ${estado.jugadores[jugadorId].posicionFinal}° Lugar</span>`;
             } else if (estado.jugadoresInactivos && estado.jugadoresInactivos.has(jugadorId)) {
-                estadoElement.innerHTML = '<span class="badge bg-secondary">⏸️ Inactivo</span>';
+                estadoElement.innerHTML = '<span class="badge bg-secondary">⏸ Inactivo</span>';
             } else {
-                estadoElement.innerHTML = '<span class="badge bg-light text-dark">🎯 Jugando</span>';
+                estadoElement.innerHTML = '<span class="badge bg-light text-dark"> Jugando</span>';
             }
         }
     }

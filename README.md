@@ -173,9 +173,11 @@ Errores en la lógica de liberación del pozo
 
 Solución temporal:
 
+Ignorar esa ficha y continuar la partida con las demas para probar su funcionalidad
+
 Reiniciar la partida desde el botón "Nueva Partida"
 
-Como alternativa, el modo invitado reinicia automáticamente al recargar la página
+
 
 Estado: Este error está siendo investigado y se espera resolver en futuras actualizaciones.
 

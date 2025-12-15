@@ -54,7 +54,7 @@ export function actualizarInfoCarrera(estado) {
         if (ganador) {
             infoCarreraElement.innerHTML = `
                 <div class="alert alert-success py-2 mb-0">
-                    <span class="fw-bold">🏆 ¡${ganador.nombre} ganó la partida!</span>
+                    <span class="fw-bold"> ¡${ganador.nombre} ganó la partida!</span>
                     <button class="btn btn-sm btn-outline-light ms-2" onclick="document.getElementById('tabla-posiciones').scrollIntoView({behavior: 'smooth'})">
                         Ver resultados
                     </button>
@@ -62,7 +62,7 @@ export function actualizarInfoCarrera(estado) {
             `;
         }
     } else {
-        infoCarreraElement.textContent = '🏁 ¡Sé el primero en llegar a la casilla 63 para ganar!';
+        infoCarreraElement.textContent = '¡Sé el primero en llegar a la casilla 63 para ganar!';
         infoCarreraElement.className = 'small text-muted';
     }
 }

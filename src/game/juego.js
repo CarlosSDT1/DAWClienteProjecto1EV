@@ -88,7 +88,7 @@ function renderizarInterfaz() {
     
     app.innerHTML = `
         <div class="container mt-4">
-            <h1 class="text-center mb-4">Juego de la Oca <small class="text-muted">(Reactivo)</small></h1>
+            <h1 class="text-center mb-4">Juego de la Oca</h1>
             
             <div class="text-center mb-3">
                 <div id="info-turno" class="h4 mb-3">
@@ -100,7 +100,6 @@ function renderizarInterfaz() {
                 <div id="dado-resultado" class="h5 text-warning mb-2"></div>
                 <div id="mensaje-especial" class="h6 text-info"></div>
                 <div id="info-carrera" class="small text-muted mt-2"></div>
-                <div id="rxjs-status" class="small text-success mt-1">🟢 rxjs activo</div>
             </div>
 
             <div class="row justify-content-center">
@@ -110,9 +109,9 @@ function renderizarInterfaz() {
             </div>
 
             <div class="text-center mt-4">
-                <button id="tirar-dado" class="btn btn-success btn-lg me-2">🎲 Tirar Dado</button>
-                <button id="pasar-turno" class="btn btn-info btn-lg me-2">⏭️ Pasar Turno</button>
-                <button id="reiniciar" class="btn btn-primary btn-lg">🔄 Nueva Partida</button>
+                <button id="tirar-dado" class="btn btn-success btn-lg me-2"> Tirar Dado</button>
+                <button id="pasar-turno" class="btn btn-info btn-lg me-2"> Pasar Turno</button>
+                <button id="reiniciar" class="btn btn-primary btn-lg"> Nueva Partida</button>
             </div>
 
             ${renderizarPanelesJugadores()}
@@ -120,7 +119,7 @@ function renderizarInterfaz() {
             <!-- Estadísticas en tiempo real -->
             <div id="estadisticas-tiempo-real" class="mt-4 card">
                 <div class="card-header">
-                    <h5 class="mb-0">📊 Estadísticas en tiempo real</h5>
+                    <h5 class="mb-0">Estadísticas en tiempo real</h5>
                 </div>
                 <div class="card-body">
                     <div class="row" id="stats-content">
@@ -209,7 +208,7 @@ function configurarEventListenersReactivos() {
             debounceTime(300)
         ).subscribe(() => {
             if (guardarEstado(estado)) {
-                mostrarMensaje('✅ Partida guardada', 'success');
+                mostrarMensaje('Partida guardada', 'success');
                 emitGameEvent('GAME_SAVED', { timestamp: new Date().toISOString() });
             }
         });
@@ -387,7 +386,7 @@ function manejarTirarDadoReactivo() {
         
         if (sigueInactivo) {
             // Si sigue inactivo, pierde el turno
-            mostrarMensaje(`⏸️ ${jugador.nombre} está inactivo (${jugador.tipoInactividad}), pierde el turno`, 'warning');
+            mostrarMensaje(`${jugador.nombre} está inactivo (${jugador.tipoInactividad}), pierde el turno`, 'warning');
             jugador.turnos++; // Contar como turno
             
             setTimeout(() => {
@@ -407,7 +406,7 @@ function manejarTirarDadoReactivo() {
     }
     
     if (jugador.terminado) {
-        mostrarMensaje(`⚠️ ${jugador.nombre} ya terminó el juego`, 'warning');
+        mostrarMensaje(`${jugador.nombre} ya terminó el juego`, 'warning');
         siguienteTurno(estado);
         emitGameEvent('TURN_SKIP', { 
             playerId: estado.jugadorActual, 
@@ -477,12 +476,12 @@ function manejarPasarTurnoReactivo() {
             return;
         } else {
             // Si ya no está inactivo, puede jugar
-            mostrarMensaje(`✅ ${jugador.nombre} ha terminado su inactividad, puede jugar`, 'success');
+            mostrarMensaje(`${jugador.nombre} ha terminado su inactividad, puede jugar`, 'success');
         }
     }
     
     if (jugador.terminado) {
-        mostrarMensaje(`⚠️ ${jugador.nombre} ya terminó el juego`, 'warning');
+        mostrarMensaje(`${jugador.nombre} ya terminó el juego`, 'warning');
         siguienteTurno(estado);
         emitGameEvent('TURN_SKIP', { playerId: estado.jugadorActual, reason: 'finished' });
         gameState$.next(estado);
@@ -495,7 +494,7 @@ function manejarPasarTurnoReactivo() {
         jugador.dadosAcumulados++;
         document.getElementById(`dados-jugador${estado.jugadorActual}`).textContent = jugador.dadosAcumulados;
         
-        mostrarResultadoDado(`⏭️ ${jugador.nombre} pasa el turno`);
+        mostrarResultadoDado(`${jugador.nombre} pasa el turno`);
         mostrarMensaje(`¡Estrategia! Próximo turno tirarás ${jugador.dadosAcumulados} dados`, 'info');
         
         emitGameEvent('TURN_PASS', { 
@@ -518,7 +517,7 @@ function manejarPasarTurnoReactivo() {
             document.getElementById('pasar-turno').disabled = false;
         }, 2000);
     } else {
-        mostrarResultadoDado(`🎲 ${jugador.nombre} ya tiene el máximo de dados (3)`);
+        mostrarResultadoDado(`${jugador.nombre} ya tiene el máximo de dados (3)`);
         mostrarMensaje("¡Ya tienes el máximo de dados acumulados (3)! Tira el dado para jugar.", 'warning');
         emitGameEvent('MAX_DICE_REACHED', { playerId: estado.jugadorActual });
     }
@@ -592,13 +591,13 @@ function procesarDespuesDeMovimientoReactivo(jugador) {
             finalPosition: jugador.posicion
         });
         
-        mostrarMensaje(`🎉 ¡${jugador.nombre} ha llegado a la meta!`, 'success');
+        mostrarMensaje(`¡${jugador.nombre} ha llegado a la meta!`, 'success');
         calcularPosicionesFinales(estado.jugadores);
         
         const ganador = Object.values(estado.jugadores).find(j => j.posicionFinal === 1);
         document.getElementById('info-turno').innerHTML = `
             <div class="alert alert-success text-center">
-                <h3 class="mb-3">🏆 ¡${ganador.nombre} ha ganado la partida! 🏆</h3>
+                <h3 class="mb-3">¡${ganador.nombre} ha ganado la partida!</h3>
                 <p class="mb-0">${ganador.nombre} llegó a la meta en ${ganador.turnos} turnos.</p>
             </div>
         `;
@@ -731,7 +730,7 @@ function reiniciarJuegoReactivo() {
     `;
     
     document.getElementById('dado-resultado').textContent = '';
-    mostrarMensaje('🔄 Nueva partida comenzada', 'info');
+    mostrarMensaje('Nueva partida comenzada', 'info');
     
     dibujarTableroCompleto(estado);
     actualizarInfoTurnoReactivo(estado);

@@ -73,7 +73,7 @@ const fetchSupabaseObservable = (url, options) => {
       }
     }),
     catchError(error => {
-      console.error('❌ Error en petición a Supabase:', error);
+      console.error('Error en petición a Supabase:', error);
       return throwError(() => error);
     })
   );
@@ -120,7 +120,7 @@ const login = (dataLogin) => {
       });
     }),
     catchError(error => {
-      console.error('❌ Error en login:', error);
+      console.error('Error en login:', error);
       return throwError(() => error);
     })
   );
@@ -168,7 +168,7 @@ const getDataObservable = (table, query = {}) => {
     headers: headerFactory({}),
   }).pipe(
     catchError(error => {
-      console.error(`❌ Error obteniendo datos de ${table}:`, error);
+      console.error(`Error obteniendo datos de ${table}:`, error);
       return of([]);
     })
   );
@@ -296,7 +296,7 @@ const getGamesObservable = () => {
   }).pipe(
     map(games => games || []),
     catchError(error => {
-      console.error('❌ Error obteniendo juegos:', error);
+      console.error('Error obteniendo juegos:', error);
       return of([]);
     })
   );
@@ -327,7 +327,7 @@ const getUserStatsObservable = () => {
   return getDataObservable("player_stats", { user_id: userId }).pipe(
     map(stats => stats[0] || null),
     catchError(error => {
-      console.error('❌ Error obteniendo estadísticas:', error);
+      console.error('Error obteniendo estadísticas:', error);
       return of(null);
     })
   );

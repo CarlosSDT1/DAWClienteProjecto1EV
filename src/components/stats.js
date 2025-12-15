@@ -140,7 +140,7 @@ function updateStatsContent(container, stats) {
     if (role !== 'user') {
         statsContent.innerHTML = `
             <div class="alert alert-warning">
-                <h6>🔒 Acceso restringido</h6>
+                <h6>Acceso restringido</h6>
                 <p>Las estadísticas solo están disponibles para usuarios registrados.</p>
                 <div class="mt-2">
                     <a href="#login" class="btn btn-primary btn-sm me-2">Iniciar Sesión</a>
