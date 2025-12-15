@@ -18,8 +18,8 @@ export function tirarDado(numDados = 1) {
 
 export function formatearResultadoDado(resultado, jugadorNombre) {
     if (resultado.numDados === 1) {
-        return ` ${jugadorNombre} ha sacado un ${resultado.total}`;
+        return `🎲 ${jugadorNombre} ha sacado un ${resultado.total}`;
     } else {
-        return ` ${jugadorNombre} ha sacado ${resultado.resultados.join(' + ')} = ${resultado.total}`;
+        return `🎲 ${jugadorNombre} ha sacado ${resultado.resultados.join(' + ')} = ${resultado.total}`;
     }
 }
