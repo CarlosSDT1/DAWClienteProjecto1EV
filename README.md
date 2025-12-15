@@ -50,54 +50,7 @@ Enlace de Producción
 La aplicación está desplegada en Vercel y puede accederse desde:
 URL de producción: https://daw-cliente-projecto1-ev.vercel.app
 
-Estructura del Proyecto
-text
-project/
-├── src/
-│   ├── components/
-│   │   ├── header.js        # Navegación con control de acceso
-│   │   ├── login.js         # Formularios de login/registro
-│   │   ├── stats.js         # Panel de estadísticas
-│   │   └── footer.js        # Pie de página
-│   │
-│   ├── game/
-│   │   ├── juego.js         # Lógica principal del juego
-│   │   ├── state/
-│   │   │   └── gameState.js # Gestión del estado y guardado
-│   │   ├── board/
-│   │   │   └── boardManager.js # Creación del tablero
-│   │   ├── ui/
-│   │   │   ├── boardRenderer.js # Renderizado del tablero
-│   │   │   └── gameUI.js    # Interfaz de usuario del juego
-│   │   ├── players/
-│   │   │   └── playerManager.js # Gestión de jugadores
-│   │   ├── dice/
-│   │   │   └── diceManager.js # Lógica de los dados
-│   │   ├── specialCells/
-│   │   │   └── specialCells.js # Casillas especiales
-│   │   ├── animations/
-│   │   │   └── animationManager.js # Animaciones
-│   │   └── stats/
-│   │       └── gameStats.js # Estadísticas del juego
-│   │
-│   ├── services/
-│   │   ├── supaservice.js   # Integración con Supabase
-│   │   ├── gameObservables.js # Observables del juego
-│   │   ├── statsObservables.js # Observables de estadísticas
-│   │   └── statsService.js  # Servicio de estadísticas
-│   │
-│   ├── router.js            # Enrutador SPA
-│   ├── main.js              # Punto de entrada
-│   ├── env.js               # Variables de entorno
-│   └── scss/
-│       └── style.scss       # Estilos principales
-│
-├── public/                  # Recursos estáticos
-├── tests/                   # Tests unitarios
-├── package.json
-├── vite.config.js
-├── vitest.config.js
-└── README.md
+
 Instalación Local
 Requisitos Previos
 Node.js 16 o superior
@@ -109,6 +62,7 @@ Clonar el repositorio
 
 bash
 git clone https://github.com/CarlosSDT1/DAWClienteProjecto1EV.git
+
 Instalar dependencias
 
 bash
