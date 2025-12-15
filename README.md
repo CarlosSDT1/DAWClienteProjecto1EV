@@ -1,224 +1,163 @@
 # DAWClienteProjecto1EV
 
-Juego de la Oca - Reactivo
+**Juego de la Oca - Reactivo**
 Un juego de la Oca moderno implementado con JavaScript, RxJS y programación reactiva, con autenticación y estadísticas en tiempo real.
 
-Características Principales
-Juego Completo
-Tablero 8x8 en formato serpiente
+## Características Principales
 
-Todas las casillas especiales: Ocas, Puentes, Posada, Pozo, Cárcel, Laberinto, Calavera, Meta
+### Juego Completo
+- Tablero 8x8 en formato serpiente
+- Todas las casillas especiales: Ocas, Puentes, Posada, Pozo, Cárcel, Laberinto, Calavera, Meta
+- Sistema de acumulación de dados (estrategia)
+- Animaciones de movimiento suaves
+- Guardado automático de partidas
 
-Sistema de acumulación de dados (estrategia)
+### Autenticación Flexible
+- Usuarios registrados: Guardan estadísticas en Supabase
+- Modo invitado: Juegan sin registro con datos locales
+- Control de acceso por roles
+- Login y registro con validación en tiempo real
 
-Animaciones de movimiento suaves
+### Estadísticas Reactivas
+- Historial de partidas completas
+- Ratio de victorias/derrotas
+- Gestión manual de resultados
+- Estadísticas en tiempo real con RxJS
 
-Guardado automático de partidas
+## Tecnologías Modernas
+- RxJS para programación reactiva
+- SPA (Single Page Application) con enrutamiento
+- Bootstrap 5 para UI responsive
+- Supabase para backend y autenticación
+- Vite para desarrollo y construcción
+- Vitest para testing
+- ESLint configurado para mantener código limpio y consistente
 
-Autenticación Flexible
-Usuarios registrados: Guardan estadísticas en Supabase
-
-Modo invitado: Juegan sin registro con datos locales
-
-Control de acceso por roles
-
-Login y registro con validación en tiempo real
-
-Estadísticas Reactivas
-Historial de partidas completas
-
-Ratio de victorias/derrotas
-
-Gestión manual de resultados
-
-Estadísticas en tiempo real con RxJS
-
-Tecnologías Modernas
-RxJS para programación reactiva
-
-SPA (Single Page Application) con enrutamiento
-
-Bootstrap 5 para UI responsive
-
-Supabase para backend y autenticación
-
-Vite para desarrollo y construcción
-
-Vitest para testing
-
-Enlace de Producción
+## Enlace de Producción
 La aplicación está desplegada en Vercel y puede accederse desde:
 URL de producción: https://daw-cliente-projecto1-ev.vercel.app
 
+## Instalación Local
 
-Instalación Local
-Requisitos Previos
-Node.js 16 o superior
+### Requisitos Previos
+- Node.js 16 o superior
+- NPM 8 o superior
 
-NPM 8 o superior
-
-Pasos de Instalación
-Clonar el repositorio
-
-bash
+### Pasos de Instalación
+1. Clonar el repositorio
 git clone https://github.com/CarlosSDT1/DAWClienteProjecto1EV.git
 
-Instalar dependencias
+text
 
-bash
+2. Instalar dependencias
 npm install
-Configurar Supabase (opcional para desarrollo)
 
+text
+
+3. Configurar Supabase (opcional para desarrollo)
+- Copiar .env.example a .env y configurar las variables
+
+4. Ejecutar en desarrollo
 npm run dev
+
+text
 La aplicación estará disponible en http://localhost:5173
 
-Construir para producción
-
-bash
+5. Construir para producción
 npm run build
 npm run preview
-Uso de la Aplicación
-Como Invitado
-Acceder a la aplicación desde el enlace de producción
 
-Hacer clic en "Jugar como Invitado"
+text
 
-Puedes jugar partidas completas
+## Uso de la Aplicación
 
-Los datos se guardan localmente en el navegador
+### Como Invitado
+1. Acceder a la aplicación desde el enlace de producción
+2. Hacer clic en "Jugar como Invitado"
+3. Puedes jugar partidas completas
+4. Los datos se guardan localmente en el navegador
 
-Como Usuario Registrado
-Crear una cuenta o iniciar sesión
+### Como Usuario Registrado
+1. Crear una cuenta o iniciar sesión
+2. Todas las partidas se sincronizan con Supabase
+3. Acceso al historial completo de partidas
+4. Estadísticas persistentes
 
-Todas las partidas se sincronizan con Supabase
+**Nota sobre autenticación:** El registro funciona correctamente. También puedes entrar en modo invitado, pero en este modo no se mostrarán estadísticas.
 
-Acceso al historial completo de partidas
+## Mecánicas del Juego
+- Tirar dado: Avanza el número de casillas indicado
+- Pasar turno: Acumula dados para el siguiente turno (máximo 3)
+- Casillas especiales: Siguen las reglas tradicionales del juego de la Oca
+- Guardado automático: La partida se guarda automáticamente cada vez que hay cambios
 
-Estadísticas persistentes
+**Nota sobre persistencia:** Los datos de la partida en curso se guardan en localStorage. Solo se envían a la base de datos Supabase al finalizar la partida.
 
-Mecánicas del Juego
-Tirar dado: Avanza el número de casillas indicado
+**Condición de victoria:** Solo cuenta como victoria si gana el jugador azul.
 
-Pasar turno: Acumula dados para el siguiente turno (máximo 3)
-
-Casillas especiales: Siguen las reglas tradicionales del juego de la Oca
-
-Guardado automático: La partida se guarda automáticamente cada vez que hay cambios
-
-Errores Conocidos
-Error de Bloqueo Permanente en Casillas Especiales
-Descripción del problema: Cuando un jugador cae en las casillas Pozo (casilla 31) o Cárcel (casilla 52), la ficha puede quedar permanentemente bloqueada y no recuperar su turno.
-
-Casos específicos:
-
-Posada (casilla 19): El jugador debería perder solo 1 turno, pero no pierde ninguno.
-
-Pozo (casilla 31): El jugador debería quedar inactivo hasta que otro jugador pase por la misma casilla, pero la liberación no funciona desde que lo hize reactivo.
-
-Cárcel (casilla 52): El jugador debería perder 2 turnos, pero puede quedar bloqueado indefinidamente.
-
-Posibles causas:
-
-El sistema de contadores de inactividad no se reinicia correctamente
-
-Problemas en la función procesarInactividades() en specialCells.js
-
-Errores en la lógica de liberación del pozo
-
-Solución temporal:
-
-Ignorar esa ficha y continuar la partida con las demas para probar su funcionalidad
-
-Reiniciar la partida desde el botón "Nueva Partida"
-
-
-
-Estado: Este error está siendo investigado y se espera resolver en futuras actualizaciones.
-
-Configuración de Supabase
+## Configuración de Supabase
 El proyecto ya está configurado con una base de datos Supabase que incluye:
 
-Tablas Configuradas
-oca_games: Almacena el historial de partidas
+### Tablas Configuradas
+- oca_games: Almacena el historial de partidas
+- player_stats: Guarda estadísticas de usuarios
+- auth.users: Gestión de usuarios (proporcionada por Supabase)
 
-player_stats: Guarda estadísticas de usuarios
+### Políticas de Seguridad
+- RLS (Row Level Security) habilitado
+- Usuarios solo pueden acceder a sus propios datos
+- Políticas de INSERT, SELECT, UPDATE, DELETE configuradas
 
-auth.users: Gestión de usuarios (proporcionada por Supabase)
-
-Políticas de Seguridad
-RLS (Row Level Security) habilitado
-
-Usuarios solo pueden acceder a sus propios datos
-
-Políticas de INSERT, SELECT, UPDATE, DELETE configuradas
-
-Testing
+## Testing
 El proyecto incluye configuración para pruebas unitarias:
-
-bash
-# Ejecutar tests
 npm run test
 
-Características Técnicas
-Programación Reactiva con RxJS
-Observables para estado del juego
+text
 
-Eventos reactivos para interacciones del usuario
+## Características Técnicas
 
-Actualizaciones en tiempo real de la interfaz
+### Programación Reactiva con RxJS
+- Observables para estado del juego
+- Eventos reactivos para interacciones del usuario
+- Actualizaciones en tiempo real de la interfaz
+- Gestión de suscripciones automática
 
-Gestión de suscripciones automática
+### Gestión de Estado
+- Estado centralizado del juego
+- Guardado automático en localStorage
+- Restauración de partidas interrumpidas
+- Serialización/deserialización eficiente
 
-Gestión de Estado
-Estado centralizado del juego
+### Arquitectura Modular
+- Separación clara de responsabilidades
+- Componentes reutilizables
+- Servicios independientes
+- Enrutamiento SPA
 
-Guardado automático en localStorage
-
-Restauración de partidas interrumpidas
-
-Serialización/deserialización eficiente
-
-Arquitectura Modular
-Separación clara de responsabilidades
-
-Componentes reutilizables
-
-Servicios independientes
-
-Enrutamiento SPA
-
-Despliegue
+## Despliegue
 La aplicación está desplegada en Vercel con las siguientes configuraciones:
 
-Configuración de Vercel
-Build Command: npm run build
+### Configuración de Vercel
+- Build Command: npm run build
+- Output Directory: dist
+- Environment Variables:
+  - SUPABASE_KEY: Configurada en el dashboard de Vercel
+  - SUPABASE_URL: Configurada en el dashboard de Vercel
 
-Output Directory: dist
-
-Environment Variables:
-
-SUPABASE_KEY: Configurada en el dashboard de Vercel
-
-SUPABASE_URL: Configurada en el dashboard de Vercel
-
-Dominio Personalizado
+### Dominio Personalizado
 La aplicación está disponible en: daw-cliente-projecto1-ev-48ig.vercel.app
 
-Licencia
+## Licencia
 Este proyecto está desarrollado como parte de un proyecto educativo. Ver archivo LICENSE para más detalles.
 
-Autor
+## Autor
 Carlos Sigüenza de Toro - 2025
 
-Notas de Desarrollo
-El código sigue principios de programación reactiva
+## Notas de Desarrollo
+- El código sigue principios de programación reactiva
+- Uso de ES6+ modules
+- Bootstrap 5 para estilos responsivos
+- Compatible con navegadores modernos
+- Optimizado para rendimiento
 
-Uso de ES6+ modules
-
-Bootstrap 5 para estilos responsivos
-
-Compatible con navegadores modernos
-
-Optimizado para rendimiento
-
-Nota importante: Se ha identificado un error en el sistema de inactividad de casillas especiales (Posada, Pozo, Cárcel) que puede causar bloqueos de la ficha permanentes. Se recomienda reiniciar la partida si ocurre este problema o que continuen el resto de fichas no bloqueadas.
+**Nota importante:** Se ha identificado un error en el sistema de inactividad de casillas especiales (Posada, Pozo, Cárcel) que puede causar bloqueos de la ficha permanentes. Se recomienda reiniciar la partida si ocurre este problema o que continúen el resto de fichas no bloqueadas.
